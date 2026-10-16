@@ -1,0 +1,64 @@
+# The server half's dependencies.
+#
+# The pins below are the versions this tree is tested with, read off a working
+# install rather than guessed at, so `dsterm setup` on a fresh machine produces
+# the same thing rather than whatever resolved that day.
+#
+# pyte is the load-bearing dependency (wcwidth, which it uses for character
+# widths, is the other): it is the VT emulator the whole server is a shell
+# around. Pinning both exactly is deliberate. A terminal emulator that renders one cell differently after a
+# minor-version bump changes what the handheld draws, and the handheld has no
+# way to tell you it happened.
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ds-claude-terminal"
+version = "1.0.0"
+description = "Claude Code on a Nintendo DS: the server half"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+    "pyte==0.8.2",
+    "wcwidth==0.8.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.1.1",
+    # A test that hangs -- a getpass waiting on /dev/tty, a socket nobody
+    # answers -- must fail rather than sit there; see `timeout` below.
+    "pytest-timeout==2.4.0",
+]
+
+# One command, installed by pipx or pip. The service runs it too (`dsterm
+# serve`), so the launcher a person types and the one the service starts are
+# the same code. bin/dsterm is the same thing for a checkout.
+[project.scripts]
+dsterm = "dsterm.cli:main"
+
+
+[tool.setuptools]
+# Explicit rather than discovered: the tree also holds dsclient/, tools/ and
+# tests/, and a package finder sweeping those up would install the DS's build
+# tooling into a server venv.
+packages = [
+    "dsterm",
+]
+
+[tool.setuptools.package-data]
+# Read at run time from beside the code: the dashboard page, the tmux config
+# the session is pinned with, and the service templates.
+dsterm = ["dashboard.html", "data/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# The suite imports the packages from the tree it lives in.
+pythonpath = ["."]
+# Per test, in seconds (pytest-timeout). Generous: the slowest real test is a
+# few seconds, and this exists to turn a hang into a failure with a traceback,
+# not to time anything.
+timeout = 300

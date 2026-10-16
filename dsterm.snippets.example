@@ -1,0 +1,26 @@
+# DS Claude Terminal -- copy to the SD card root as /dsterm.snippets
+#
+# Optional. Short prompts you do not want to type on a 10x5 touch keyboard.
+# They appear in the composer: COMPOSE on the Control screen, then Y. A
+# console with no snippet file is not misconfigured; the list is just empty.
+# (Snippets can also live on the computer, in
+# ~/.config/ds-claude-terminal/snippets, and are sent to the DS when it
+# connects -- docs/CUSTOMIZING.md.)
+#
+# Format: one `label=body` per line, at most 8 lines.
+#
+#   label  1-15 characters, must be unique, shown in the picker
+#   body   up to 255 characters
+#
+# Escapes in the body: \n newline, \t tab, \\ backslash. Nothing else, and a
+# raw control byte is a parse error rather than something smuggled to the PTY.
+# Lines starting with # are comments; blank lines are ignored.
+#
+# Picking a snippet loads it into the composer and shows it on the top screen;
+# nothing reaches Claude until you press A. Picking is not sending.
+#
+# Fill in your own. These are examples -- remove the # to use one:
+
+# review=Review the last commit for bugs and anything that needs a test.
+# tests=Run the test suite and fix whatever fails.
+# commit=Write a commit message for the staged changes.

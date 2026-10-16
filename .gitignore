@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+*.egg-info/
+
+# Never commit pairing material. The key lives in ~/.config/ds-claude-terminal/psk
+# with mode 600; this is belt-and-braces in case anyone ever copies one here.
+psk
+*.key
+
+# DS client host-test artefacts
+dsclient/build/
+
+# Real config holds the Wi-Fi passphrase and pairing key -- card only.
+dsterm.cfg
+dsterm.snippets
+docs/flash-log.md
+
+# DS build artefacts
+dsclient/build/
+dsclient/*.nds
+dsclient/*.elf
+.DS_Store
+
+# Release builds (tools/release_zip.sh)
+dist/
+# Python build output (pip wheel, python -m build)
+build/

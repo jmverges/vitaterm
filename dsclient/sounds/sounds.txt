@@ -1,0 +1,44 @@
+# The terminal's sounds: one line per take, `bank file gain`.
+#
+# A desk, not a game: soft keyboard keys, a pencil, a notebook, a knock at
+# the door, a latch.  Made with ElevenLabs sound effects, then cut to single
+# hits, warmed and levelled for the DS speaker.
+#
+# A bank is one cue; several takes are variations the conductor rotates
+# through.  `gain` is the take's loudness as a percentage of the room volume
+# (every file is mastered to the same peak).  After editing this file or a
+# WAV, run:  python3 tools/sfx_build.py
+#
+# bank     file           gain
+sent       sent-1.wav     66
+sent       sent-2.wav     66
+think      think-1.wav    40
+# output-1.wav ships as the bank's take but never plays: the SOFT set is quiet
+# when an answer starts (a card's own output.wav still plays).
+output     output-1.wav   25
+done       done-1.wav     80
+done       done-2.wav     80
+link       link-1.wav     60
+drop       drop-1.wav     70
+lantern    lantern-1.wav  55
+cursor     cursor-1.wav   26
+cursor     cursor-2.wav   26
+cursor     cursor-3.wav   26
+switch     switch-1.wav   50
+key        key-1.wav      30
+key        key-2.wav      30
+key        key-3.wav      30
+key        key-4.wav      30
+delete     delete-1.wav   30
+delete     delete-2.wav   30
+deny       deny-1.wav     60
+blip       blip-1.wav     28
+blip       blip-2.wav     28
+blip       blip-3.wav     28
+blip       blip-4.wav     28
+blip       blip-5.wav     28
+blip       blip-6.wav     28
+boot       boot-1.wav     66
+approve    approve-1.wav  84
+approve    approve-2.wav  84
+question   question-1.wav 78

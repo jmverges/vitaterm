@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# The front door for a checkout: `dsterm` (dsterm/cli.py), run with this tree's
+# venv when there is one. An installed copy has the same command on PATH.
+#
+# Setup from a checkout links ~/.local/bin/dsterm here, so the checkout is
+# found by following that link, not from the name the command was run by.
+# (A loop, not readlink -f: macOS before 12.3 has no -f.)
+SRC="${BASH_SOURCE[0]}"
+while [ -L "$SRC" ]; do
+    DIR="$(cd -P "$(dirname "$SRC")" && pwd)"
+    SRC="$(readlink "$SRC")"
+    case "$SRC" in /*) ;; *) SRC="$DIR/$SRC" ;; esac
+done
+REPO="$(cd -P "$(dirname "$SRC")/.." && pwd)"
+PY="$REPO/.venv/bin/python"
+[ -x "$PY" ] || PY="${PYTHON:-python3}"
+PYTHONPATH="$REPO${PYTHONPATH:+:$PYTHONPATH}" exec "$PY" -m dsterm.cli "$@"

@@ -1,0 +1,36 @@
+# The terminal's host-testable sources, one per line.  run_tests.sh compiles
+# these into the terminal's suite with ext_none.c, and into an extension's
+# suite with tests/sources.ext.txt on top when that file exists.
+source/proto.c
+source/sha256.c
+source/seal.c
+source/chacha20.c
+source/config.c
+source/log.c
+source/status.c
+source/kbd.c
+source/backoff.c
+source/composer.c
+source/snippets.c
+source/sessions.c
+source/remote.c
+source/sound.c
+source/sfx_assets.c
+source/wav.c
+source/chime.c
+source/focus.c
+source/project.c
+source/settings.c
+source/buttons.c
+source/camera.c
+source/clip.c
+source/x25519.c
+source/pair.c
+source/entropy.c
+source/profiles.c
+source/discover.c
+source/bootui.c
+source/console.c
+source/privacy.c
+source/quick.c
+source/mirror.c

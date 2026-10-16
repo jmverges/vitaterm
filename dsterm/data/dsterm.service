@@ -1,0 +1,29 @@
+[Unit]
+Description=DS Claude Terminal server
+After=network.target
+
+[Service]
+Type=simple
+# Where Claude Code runs. `dsterm install-service --cwd PATH` changes it.
+WorkingDirectory=@WORKDIR@
+
+# systemd does not read .bashrc, so ~/.local/bin -- where `claude` lives -- is
+# absent from the default PATH. Without this the child cannot be found, tmux
+# prints "[exited]", and the only visible symptom is a session that dies the
+# instant it starts.
+Environment=PATH=%h/.local/bin:%h/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin
+# Unbuffered because the journal should show events as they happen. Buffered
+# output is how a running server's log looked empty while it was plainly working.
+Environment=PYTHONUNBUFFERED=1
+ExecStart=@PYTHON@ -m dsterm.cli serve --tmux dsterm --dashboard-port 8348
+Restart=on-failure
+RestartSec=2
+
+# The child lives in tmux and outlives this unit on purpose, so stopping the
+# service must not take the session with it. KillMode=process stops only the
+# server process; the tmux server keeps the session, and starting again
+# re-attaches to whatever Claude Code was in the middle of.
+KillMode=process
+
+[Install]
+WantedBy=default.target

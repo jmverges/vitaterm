@@ -1,0 +1,71 @@
+# A tag v* builds the release: the ROM zip a person unzips onto an SD card,
+# and the wheel `pipx install` takes, each with its SHA-256 in the notes, so
+# the bytes in a release can be checked against a build of the tag.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  # The whole gate, exactly as every push runs it. Nothing is built for
+  # release, let alone published, unless it passes.
+  gate:
+    uses: ./.github/workflows/ci.yml
+
+  rom:
+    needs: gate
+    runs-on: ubuntu-latest
+    # Pinned, tag and digest, so a release is built with the toolchain CI
+    # last went green with rather than whatever `latest` became overnight.
+    # 1.23.0 or later: 1.22.x cannot open the SD card from locked-SCFG
+    # launchers (dsclient/Makefile). Move it on purpose, in its own commit.
+    container: skylyrac/blocksds:slim-v1.24.0@sha256:779f6193d1030c62e60d1f0f39c3e32cf4045c0bd224a45c0ceadf9d9ab01a51
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - name: zip, if the image lacks it
+        run: command -v zip >/dev/null || { apt-get update && apt-get install -y --no-install-recommends zip; }
+      - name: build the card zip
+        run: sh tools/release_zip.sh "${GITHUB_REF_NAME}"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: zip
+          path: dist/*.zip
+
+  publish:
+    needs: [gate, rom]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
+        with:
+          name: zip
+          path: dist
+      - name: wheel
+        run: python -m pip wheel . --no-deps -w dist
+      - name: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd dist
+          sha256sum * > SHA256SUMS
+          {
+            echo "**Console:** unzip \`dsterm-${GITHUB_REF_NAME}.zip\` and copy what is inside (dsterm.nds and"
+            echo "the dsterm folder) to the SD card root, then start dsterm.nds from your launcher"
+            echo "(DSi and 3DS: in DSi mode, the default)."
+            echo "**Computer:** \`pipx install\` the wheel, then \`dsterm setup\`."
+            echo
+            echo "Step by step: the Setup section of README.md"
+            echo
+            echo '```'
+            cat SHA256SUMS
+            echo '```'
+          } > notes.md
+          gh release create "${GITHUB_REF_NAME}" --title "${GITHUB_REF_NAME}" \
+            --notes-file notes.md *.zip *.whl SHA256SUMS

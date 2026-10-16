@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- DS Claude Terminal server, as a launchd user agent. Written by
+     `dsterm install-service`; the same job the systemd unit does on Linux. -->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>dsterm.server</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>@PYTHON@</string>
+        <string>-m</string>
+        <string>dsterm.cli</string>
+        <string>serve</string>
+        <string>--tmux</string>
+        <string>dsterm</string>
+        <string>--dashboard-port</string>
+        <string>8348</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>@WORKDIR@</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <!-- launchd's PATH is minimal; `claude` and Homebrew's tmux live here. -->
+        <key>PATH</key>
+        <string>@HOME@/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>PYTHONUNBUFFERED</key>
+        <string>1</string>
+    </dict>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>@LOG@</string>
+    <key>StandardErrorPath</key>
+    <string>@LOG@</string>
+</dict>
+</plist>

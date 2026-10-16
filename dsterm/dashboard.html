@@ -1,0 +1,179 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DS Claude Terminal</title>
+
+<!--
+  The dashboard's entire user interface.
+
+  This file is read fresh on every request, so editing it and refreshing the
+  browser is the whole loop -- no restart, no rebuild.
+
+  Safe to change freely. It cannot affect the protocol, the handheld, or the
+  session: it only reads GET /api/state. Two things it must never grow are a way
+  to send keystrokes, which would be a client that skipped the pairing
+  handshake, and a call to any host other than its own origin.
+-->
+
+<style>
+ :root { color-scheme: dark; --gap: 12px; }
+ * { box-sizing: border-box; }
+ html, body { height: 100%; }
+ body { background:#14161a; color:#d7dae0; margin:0; padding:var(--gap);
+        font:13px ui-monospace,Menlo,Consolas,monospace;
+        display:flex; flex-direction:column; gap:var(--gap); overflow:hidden; }
+
+ /* One row: the terminal takes everything left over, the rail is fixed. The
+    page itself never scrolls -- a status display you have to scroll is not a
+    status display. */
+ .wrap { flex:1 1 auto; min-height:0; display:flex; gap:var(--gap); }
+ .panel { background:#1b1e24; border:1px solid #2a2f38; border-radius:8px; }
+ .screen-panel { flex:1 1 auto; min-width:0; display:grid; place-items:center;
+                 padding:var(--gap); }
+ .rail { flex:0 0 236px; display:flex; flex-direction:column; gap:var(--gap);
+         min-height:0; }
+
+ /* Sized by fit() below, not by CSS: the terminal is a fixed 42x24 grid and the
+    only sensible size is the largest that fits both dimensions of whatever
+    window it is in. */
+ #screen { white-space:pre; line-height:1.1; font-size:14px; }
+
+ .head { padding:10px 12px; border-bottom:1px solid #2a2f38; }
+ .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:7px; }
+ .up { background:#3fb950; } .down { background:#f85149; }
+ .muted { color:#8b93a1; }
+
+ table { width:100%; border-collapse:collapse; }
+ td { padding:2px 12px; }
+ td.v { text-align:right; font-variant-numeric:tabular-nums; }
+ tr.zero td { color:#5c6470; }
+
+ #events { flex:1 1 auto; min-height:0; overflow-y:auto; padding:8px 12px; }
+ #events div { padding:2px 0; color:#a9b1bd; word-break:break-word; }
+ #events b { color:#6e7681; font-weight:400; margin-right:7px; }
+
+ button { width:calc(100% - 24px); margin:0 12px 12px; background:#2a2f38;
+          color:#d7dae0; border:1px solid #3a414d; border-radius:5px;
+          padding:6px; font:inherit; cursor:pointer; }
+ button:hover { background:#343b46; }
+
+ /* Narrow windows: stack, and let the page scroll rather than crushing the
+    terminal into unreadability. */
+ @media (max-width: 720px) {
+   body { overflow:auto; }
+   .wrap { flex-wrap:wrap; }
+   .rail { flex:1 1 100%; }
+ }
+</style>
+
+<div class="wrap">
+  <div class="panel screen-panel"><div id="screen">connecting…</div></div>
+  <div class="rail">
+    <div class="panel">
+      <div class="head" id="head"></div>
+      <table id="counters"></table>
+      <button id="restart">Restart child</button>
+    </div>
+    <div class="panel" id="events"></div>
+  </div>
+</div>
+
+<script>
+// Geometry comes from /api/state, not from a constant here: the grid is a
+// function of the font the handheld's renderer ships, so a hardcoded 42x24
+// would draw the wrong shape the first time someone zooms it out. These are
+// only the pre-first-poll fallback.
+let COLS = 42, ROWS = 24;
+const LINE = 1.1;
+const esc = s => s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+// Largest font size at which 42x24 fits the panel, measured rather than
+// assumed: character width varies by the font the browser actually picked, and
+// guessing it produces a terminal that is either clipped or needlessly small.
+let charRatio = null;
+function measure() {
+  const p = document.createElement('span');
+  p.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;font:inherit;font-size:200px';
+  p.textContent = '0'.repeat(20);
+  document.body.appendChild(p);
+  charRatio = p.getBoundingClientRect().width / 20 / 200;
+  p.remove();
+}
+
+function fit() {
+  const el = document.getElementById('screen');
+  const box = el.parentElement.getBoundingClientRect();
+  if (!charRatio) measure();
+  const pad = 24;
+  const byWidth  = (box.width  - pad) / (COLS * charRatio);
+  const byHeight = (box.height - pad) / (ROWS * LINE);
+  el.style.fontSize = Math.max(8, Math.min(byWidth, byHeight)) + 'px';
+}
+
+function paint(s) {
+  // Adopt the server's geometry before fit() sizes the font against it.
+  if (s.geometry) { COLS = s.geometry.cols; ROWS = s.geometry.rows; }
+  let html = '';
+  for (const row of (s.screen || [])) {
+    for (const c of row) {
+      let fg = c.fg, bg = c.bg;
+      if (c.r) { const t = fg; fg = bg; bg = t; }
+      html += `<span style="color:${fg};background:${bg}${c.b ? ';font-weight:700' : ''}">`
+            + esc(c.ch) + '</span>';
+    }
+    html += '\n';
+  }
+  const screen = document.getElementById('screen');
+  screen.innerHTML = html || 'no session';
+  fit();
+
+  const cl = s.client.addr;
+  const age = s.client.connected_at
+    ? Math.max(0, Math.round(s.now - s.client.connected_at)) + 's'
+    : null;
+  document.getElementById('head').innerHTML =
+      `<div><span class="dot ${s.child.alive ? 'up' : 'down'}"></span>`
+    + `child ${s.child.alive ? 'alive' : 'dead'}</div>`
+    + `<div class="muted" style="margin-top:5px">${esc(s.listening)}</div>`
+    + `<div class="muted">`
+    + (cl ? `${esc(cl)} · ${age}` : 'no handheld')
+    + `</div>`
+    // The badge is all the page ever gets: pixels stay on the feed socket,
+    // which only this user can open. `dsterm camera` is the watcher.
+    + ((s.camera && s.camera.on)
+       ? `<div style="color:#f85149;margin-top:5px">● CAMERA ON — live, not recorded</div>`
+       : '');
+
+  // Zero counters are dimmed rather than hidden: which ones are zero is
+  // information, and a table whose rows move around is hard to read at a
+  // glance.
+  document.getElementById('counters').innerHTML =
+    Object.entries(s.counters).map(([k, v]) =>
+      `<tr class="${v ? '' : 'zero'}"><td>${esc(k)}</td><td class="v">${v}</td></tr>`
+    ).join('');
+
+  document.getElementById('events').innerHTML =
+    s.events.slice().reverse().map(e => {
+      const d = new Date(e.t * 1000).toTimeString().slice(0, 8);
+      return `<div><b>${d}</b>${esc(e.msg)}</div>`;
+    }).join('');
+}
+
+async function tick() {
+  try {
+    paint(await (await fetch('/api/state')).json());
+  } catch (e) {
+    document.getElementById('screen').textContent = 'server unreachable';
+  }
+}
+
+document.getElementById('restart').onclick = async () => {
+  if (confirm('Restart the child process? The session is lost.')) {
+    await fetch('/api/restart-child', {method: 'POST', headers: {'X-Dsterm-Restart': '1'}});
+  }
+};
+
+addEventListener('resize', fit);
+tick();
+setInterval(tick, 1000);
+</script>
