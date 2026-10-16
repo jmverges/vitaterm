@@ -17,7 +17,7 @@ type prompts on the touch screen, from the couch.
 ![Encrypted](https://img.shields.io/badge/link-encrypted%20%2B%20signed-d97757?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-3d3d3a?style=flat-square)
 
-[**Features**](#features) · [**Setup**](#setup) · [**Pairing**](#pairing) · [Using it](docs/USING.md) · [Under the hood](#under-the-hood) · [Troubleshooting](TROUBLESHOOTING.md)
+[**Features**](#features) · [**Setup**](#setup) · [**Pairing**](#pairing) · [**Commands**](#commands) · [Using it](docs/USING.md) · [Under the hood](#under-the-hood) · [Troubleshooting](TROUBLESHOOTING.md)
 
 </div>
 
@@ -337,6 +337,66 @@ install from source, or uninstall, see
 [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).
 
 ---
+
+## Commands
+
+`dsterm --help` lists them all. The ones you'll use:
+
+### Every day
+
+| Command | What it does |
+|---|---|
+| `dsterm status` | Is the server running, which DS is connected, the session |
+| `dsterm doctor` | Checks everything, and says how to fix whatever isn't right |
+| `dsterm pair` | Pair another DS (or the same one again) |
+| `dsterm devices` | The paired DS consoles; `dsterm devices forget ID` revokes one |
+| `dsterm restart` | Restart the server (also `start` and `stop`). Your Claude session keeps running |
+| `dsterm logs -f` | The server's log, live |
+
+### Watching or joining the session
+
+Pick the one that fits what you're doing:
+
+| Command | Best for |
+|---|---|
+| `tmux -L dsterm attach -t dsterm` | **Working at the computer.** The same Claude session in your own terminal, fast and full-colour. `dsterm attach` does the same. Leave with **Ctrl-B** then **D**; the session keeps running |
+| `dsterm view --window` | **Showing it off.** The DS itself, both screens pixel for pixel, in a window: for demos, streams and recordings. Type and click from there |
+| `dsterm view` | Both DS screens in the terminal: pictures in iTerm2, Ghostty, kitty and WezTerm, text anywhere else. **Ctrl-]** then **e** opens the window, **q** leaves |
+| `dsterm camera --window` | The DSi camera's live view, while it's open on the DS |
+| `dsterm screen` | Print what the DS shows right now, once |
+| <http://127.0.0.1:8348> | A read-only dashboard in your browser, on the computer only |
+
+The session is sized for the DS (42×24), so it stays that size wherever you
+join it from.
+
+### On Windows
+
+The server lives in WSL. From **Ubuntu**, every command above works as
+written. From **PowerShell** or **Command Prompt**, put `wsl` in front:
+
+```powershell
+wsl -d Ubuntu -- bash -lc "dsterm view --window"
+wsl -d Ubuntu -- tmux -L dsterm attach -t dsterm
+wsl -d Ubuntu -- bash -lc "dsterm doctor"
+```
+
+- `Ubuntu` is your distribution's name (`wsl -l` lists them).
+- `bash -lc` runs a login shell, which is what finds `dsterm` in
+  `~/.local/bin`. Or give the full path, and the Linux user if the server runs
+  as someone other than your default:
+  `wsl -d Ubuntu -u <you> -- /home/<you>/.local/bin/dsterm view --window`.
+- The windows need Python's tkinter: `sudo apt install python3-tk` once in
+  Ubuntu (the same on Linux). Windows 11 then shows them by itself (WSLg).
+
+### Setting up and changing things
+
+| Command | What it does |
+|---|---|
+| `dsterm setup` | Install the server and start it (run once) |
+| `dsterm install-service --cwd ~/projects/app` | Start Claude Code in a project instead of your home folder |
+| `dsterm card PATH --rom dsterm.nds --wifi --pair` | Set up an SD card from the computer: the app, Wi-Fi and a pairing |
+| `dsterm card PATH --sounds FOLDER` | Copy your own sounds to the card; `dsterm sounds` lists the names |
+| `dsterm wsl-setup` | Let the DS through Windows' firewall (Windows only) |
 
 ## Under the hood
 
