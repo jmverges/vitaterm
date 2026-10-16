@@ -17,7 +17,7 @@ type prompts on the touch screen, from the couch.
 ![Encrypted](https://img.shields.io/badge/link-encrypted%20%2B%20signed-d97757?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-3d3d3a?style=flat-square)
 
-[**Setup**](#setup) · [**Pairing**](#pairing) · [Using it](docs/USING.md) · [Under the hood](#under-the-hood) · [Troubleshooting](TROUBLESHOOTING.md)
+[**Features**](#features) · [**Setup**](#setup) · [**Pairing**](#pairing) · [Using it](docs/USING.md) · [Under the hood](#under-the-hood) · [Troubleshooting](TROUBLESHOOTING.md)
 
 </div>
 
@@ -27,22 +27,67 @@ Your code and Claude Code itself stay on your computer. The DS only shows the
 screen and sends keys, everything between them is encrypted, and nothing the
 DS sends can run a command or read a file.
 
-## What it does
+## Features
 
-| Feature | What it does |
-|---|---|
-| **Your live session** | The top screen is the Claude Code terminal, 42×24, updated as it changes |
-| **Approvals on a button** | The DS tells you, in words and with a sound, when Claude is working, done, or needs your OK. **A** says yes, **X** says no |
-| **QUICK** | Claude's mode on one tile, plus rewind, the diff, slash commands and your recent prompts |
-| **REMOTE** | Every Claude session on the computer (which are working, which need you), and your other computers |
-| **PHOTO** | On a DSi or 3DS, take a picture and it lands on the computer with its path in your prompt |
-| **`dsterm view`** | Both DS screens on your computer, pixel for pixel like an emulator. Type and click from there |
-| **Comfortable typing** | A live touch keyboard, a composer for longer prompts, snippets, and your own command buttons |
-| **Sounds** | The classic chip voice, a soft desk set, or your own WAV files. Or silence |
-| **Yours to set up** | Accent colour, button mapping, start screen, all on the DS's Settings page |
-| **Always reconnects** | Sleep, Wi-Fi drops, server restarts: the DS finds its way back by itself |
-| **Encrypted** | Pairing by a six-digit code, then every frame encrypted and signed |
-| **Demo mode** | One setting stars out every IP address on screen, for streams and photos |
+### On the DS
+
+- **Your live session.** The top screen is the Claude Code terminal, 42×24,
+  updated as it changes. A second build fits 64×32 in a smaller font.
+- **Approvals on a button.** When Claude wants to edit a file or run a
+  command, the DS turns yellow and beeps: **A** says yes, **X** says no. When
+  it asks a question, the d-pad picks the answer.
+- **Always knows what Claude is doing.** Working, done, needs your OK, asking
+  you something: in plain words on the bottom screen, and with a sound.
+- **Typing.** A touch keyboard that types live, a composer for prompts worth
+  editing before they're sent, and snippets for the things you type often.
+- **QUICK.** Claude's mode on one tile (switch it with a tap), plus rewind,
+  the diff, every slash command (yours included) and your recent prompts.
+- **REMOTE.** Every Claude Code session on the computer, which are working
+  and which need you; switch to one, start a new one, or move the DS to
+  another computer on your network.
+- **PHOTO** (DSi and 3DS). A live viewfinder on either camera; take the
+  picture and it lands on the computer with its path in your prompt.
+- **PROJECT.** The project Claude is working in, on both screens: what's
+  happening now, what changed in the repository, and one-tap buttons for
+  your `npm` scripts, `make` targets, tests and your own commands.
+- **Read back.** Scroll up through everything the session printed; hold
+  down to jump back to now.
+- **Sounds.** The classic chip voice, a soft desk set with three variations
+  of each sound, or your own WAV files. Or silence.
+- **Yours to set up.** Volume, typing clicks, four accent colours, the start
+  screen, autoconnect, and A/B/X/Y/START mapped to the keys you want.
+
+### On the computer
+
+- **One command to install,** on macOS, Linux, or Windows with WSL2. It runs
+  in the background and starts by itself; `dsterm doctor` checks everything
+  and says how to fix what isn't right.
+- **`dsterm view`.** Both DS screens on your computer, pixel for pixel like an
+  emulator, in the terminal or a window of its own. Type to Claude from there
+  and click the bottom screen to tap the DS.
+- **The camera, live,** in a terminal or a window while it's open on the DS.
+- **`dsterm card`.** Set up an SD card from the computer: the app, your Wi-Fi,
+  a pairing and your own sounds, with nothing to type on the DS.
+- **Your session survives.** Claude Code runs in tmux, so restarting the
+  server or losing the DS never loses your work. A Mac or Linux computer
+  stays awake while the DS is connected.
+- **More than one computer.** Pair the DS with each; switch between them from
+  the DS.
+
+### Connection and security
+
+- **Finds your computer by itself** on the network, and sets up Wi-Fi with an
+  on-screen wizard (WPA2 on a DSi or 3DS).
+- **Pairs by comparing a six-digit code,** like Bluetooth. No passwords to
+  type, a key of its own for each DS, and `dsterm devices forget` revokes one.
+- **Every frame encrypted and signed** (ChaCha20 and HMAC-SHA256), with no
+  way to switch it off.
+- **Reconnects by itself** after sleep, Wi-Fi drops or a server restart.
+- **Can only do what a keyboard can.** Text pushed to the DS needs a second
+  press before it's typed, and nothing the DS sends runs a command or reads a
+  file.
+- **Demo mode.** One setting stars out every IP address on screen, for streams
+  and photos.
 
 <p align="center">
   <img src="docs/screens/control-approval.png" width="210" alt="Claude asking for approval on the DS">
