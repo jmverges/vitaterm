@@ -59,6 +59,13 @@ knocks twice and the line turns yellow: **"Claude needs your OK: A yes X no"**.
 - The **d-pad** moves through the choices first, for example to "Yes, and
   don't ask again".
 
+Each press of A answers the question you are looking at, and only that one.
+If the question changed before your press reached the computer (you pressed
+twice, or someone answered it at the computer), the press is not sent and the
+DS says **"not sent: the screen changed -- look, then press again"**. The same
+happens to an Enter pressed within a moment of the last one, while the
+computer checks whether a new question is waiting behind it.
+
 When Claude asks a question instead, the DS knocks once and then higher, a
 "hm?", and says
 **"Claude asked you something"**: answer with the keyboard or the composer.

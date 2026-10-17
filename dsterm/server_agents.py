@@ -16,7 +16,10 @@ from .protocol import (
     MsgType,
     encode_remote_note,
     encode_state,
+    ASK_FLAG_DROPPED,
+    STATE_NEEDS_APPROVAL,
     STATE_UNKNOWN,
+    STATE_WORKING,
     REMOTE_ACTION_COPY,
     REMOTE_ACTION_NEW,
     REMOTE_ACTION_OPEN,
@@ -55,6 +58,39 @@ REMOTE_AGE_REFRESH_SECONDS = 60.0
 # ticking: it is thrown away at harvest rather than published as the present
 # (RemotePoller.poll's max_age).
 STATE_STALE_SECONDS = 30.0
+
+# A change on screen this soon after an arrow from the card is that arrow's
+# echo -- the highlight moving under the d-pad -- and not a new question.
+# Only an arrow: any other key that changes the screen under a prompt (Tab to
+# amend, typing) gives the question a new id, which costs at worst one
+# "press again".
+ASK_ECHO_SECONDS = 0.5
+_ARROWS = (b"\x1b[A", b"\x1b[B", b"\x1b[C", b"\x1b[D")
+
+# After an answer, until a reading taken since then says what is on screen
+# (or this long, if none does), an Enter from an "ask" card is held back too:
+# the next prompt may already be up, and no reading has opened it yet. This
+# is what makes a double press safe; a press this soon after an answer is
+# almost always one.
+ASK_SETTLE_SECONDS = 3.0
+
+# The keys that answer a permission prompt: Enter accepts the highlighted
+# choice, Escape declines. Arrows only move the highlight.
+_ANSWER_KEYS = (b"\r", b"\n")
+_DECLINE = b"\x1b"
+
+
+def accepts(keys: bytes) -> bool:
+    """Whether these bytes would accept the highlighted choice of a prompt."""
+    return any(k in keys for k in _ANSWER_KEYS)
+
+
+def answers(keys: bytes) -> bool:
+    """Whether these bytes, written now, would answer a waiting prompt:
+    accept it, or decline it. Declining is never held back -- no means no
+    whichever prompt it lands on -- but it does close the question."""
+    return keys == _DECLINE or accepts(keys)
+
 
 # A card that has sent nothing for this long is not counted as owed a
 # `claude agents` reading. The card PINGs every second, so ten seconds is ten
@@ -287,7 +323,11 @@ class AgentsMixin:
                             in self._remote_windows.items()}
                 reading = remote.state_reading(obs.agents, here_by_pid,
                                                active, attached)
+        if active != self._state_window and self._ask_open:
+            # Another window's prompt is another question.
+            self._new_ask_id()
         self._state_window = active
+        reading = self._question(reading, obs)
         if reading != self._state_reading:
             self._state_reading = reading
             names = ("unknown", "idle", "working", "needs approval", "needs input")
@@ -325,13 +365,131 @@ class AgentsMixin:
         """
         if not c.caps.state or not c.authed or c not in self._clients:
             return
-        if self._state_reading == c.agents.state_sent:
+        sent = (self._state_reading + (self._ask_id,) if c.caps.ask
+                else self._state_reading)
+        if sent == c.agents.state_sent and not c.agents.ask_dropped:
             return
         if (self._switch_in_progress(c) or self._session_list_staged(c)
                 or c.agents.batch is not None):
             return
-        c.agents.state_sent = self._state_reading
-        self._send_to(c, encode_state(*self._state_reading))
+        c.agents.state_sent = sent
+        ask = None
+        if c.caps.ask:
+            ask = (self._ask_id, ASK_FLAG_DROPPED if c.agents.ask_dropped else 0)
+            c.agents.ask_dropped = False
+        self._send_to(c, encode_state(*self._state_reading, ask=ask))
+
+    # -- questions --------------------------------------------------------------
+    #
+    # A permission prompt is a question, and each one gets an id. STATE tells
+    # an "ask" card the id of the one open; the card sends its Enter as an
+    # ANSWER naming it, and the bytes reach the session only if that
+    # question is still the one open. So an Enter pressed for one prompt, and
+    # delayed for any reason, can never answer the next: the next has another
+    # id. A question closes when an answer reaches it, and a new id opens with
+    # each new one:
+    #
+    # * when a reading says the session needs approval and no question is
+    #   open (a reading started before the last answer does not count: it
+    #   describes the question that was just answered);
+    # * when the screen changes under an open question with no key from the
+    #   card to explain it -- someone answered at the computer, and what is
+    #   on screen now is not what the card was looking at;
+    # * when the selected window changes.
+    #
+    # Between an Enter or Escape from the card and the first reading taken
+    # after it, the next prompt may already be on screen with no question
+    # open for it, so an Enter from the card is held back then too
+    # (ASK_SETTLE_SECONDS).
+
+    def _new_ask_id(self) -> None:
+        self._ask_id = (self._ask_id + 1) & 0xFFFFFFFF or 1
+        self._ask_screen = None
+
+    def _question(self, reading: tuple[int, str],
+                  obs: remote.Observation | None) -> tuple[int, str]:
+        """The reading as cards hear it, opening a question for a new prompt."""
+        if obs is not None and obs.started_at >= self._ask_closed_at:
+            self._ask_settling = False
+        if reading[0] != STATE_NEEDS_APPROVAL:
+            self._ask_open = False
+            return reading
+        if self._ask_open:
+            return reading
+        if obs is not None and obs.started_at < self._ask_closed_at:
+            # Read before the last answer reached the session: that prompt is
+            # answered, and Claude is on with it until a later reading says
+            # otherwise.
+            return (STATE_WORKING, "")
+        self._ask_open = True
+        self._new_ask_id()
+        return reading
+
+    def _ask_tick(self, cells: tuple, c: ClientState | None, now: float) -> None:
+        """A changed screen under an open question is a new question, unless
+        the card's own key just changed it."""
+        if not self._ask_open:
+            self._ask_screen = None
+            return
+        if self._ask_screen is not None and cells != self._ask_screen:
+            last_arrow = self._ask_arrow_at
+            if last_arrow is None or now - last_arrow > ASK_ECHO_SECONDS:
+                self._new_ask_id()
+                self._emit("the question on screen changed")
+        self._ask_screen = cells
+
+    def _gate_keys(self, c: ClientState, keys: bytes, ask_id: int | None) -> bool:
+        """Whether ``keys`` may reach the session now: KEY when ``ask_id`` is
+        None, otherwise ANSWER. Closes the question they answer.
+
+        From an "ask" card, Enter reaches an open question only inside an
+        ANSWER naming it: a plain one was sent before the card had heard of
+        the question, so it was meant for something else. An ANSWER naming
+        any other question is late, and dropped. Either way the card's next
+        STATE says so, and the person presses again, now looking at it.
+        """
+        if ask_id is None:
+            late = (c.caps.ask and accepts(keys)
+                    and (self._ask_open or self._settling()))
+        else:
+            late = not (self._ask_open and ask_id == self._ask_id)
+        if late:
+            c.agents.ask_dropped = True
+            self._emit("dropped an answer: the question it was for is gone"
+                       if ask_id is not None else
+                       "dropped an Enter sent before the card saw the question")
+            return False
+        return True
+
+    def _settling(self) -> bool:
+        """Whether an answer is too recent for any reading to have followed it."""
+        if self._ask_settling and (time.monotonic() - self._ask_closed_at
+                                   > ASK_SETTLE_SECONDS):
+            self._ask_settling = False
+        return self._ask_settling
+
+    def _ask_keys_sent(self, keys: bytes) -> None:
+        """Note an arrow from the card, whose echo is not a new question."""
+        if keys in _ARROWS:
+            self._ask_arrow_at = time.monotonic()
+
+    def _answered(self, c: ClientState, keys: bytes) -> None:
+        """Keys from the card reached the session. If they answer the open
+        question, close it; and any Enter or Escape from an "ask" card starts
+        the settling moment, whether or not a question was open -- a prompt
+        no reading has seen yet is answered just the same, and the next one
+        may be right behind it."""
+        if not answers(keys):
+            return
+        was_open = self._ask_open
+        if not (was_open or c.caps.ask):
+            return
+        self._ask_open = False
+        self._ask_settling = c.caps.ask
+        self._ask_closed_at = time.monotonic()
+        if was_open:
+            self._refresh_state()
+        self._agents.refresh()
 
     def _remote_batch_queued_or_active(self, c: ClientState) -> bool:
         return c.agents.batch is not None or any(
@@ -598,6 +756,14 @@ class AgentsMixin:
         # is sent it when it differs from what that card was last sent.
         self._state_reading: tuple[int, str] = (STATE_UNKNOWN, "")
         self._state_window: str | None = None
+        # The open question, if any (see "questions"). The id starts
+        # anywhere, so no id from an earlier run of this server is current.
+        self._ask_id = int.from_bytes(os.urandom(4), "big") or 1
+        self._ask_open = False
+        self._ask_closed_at = float("-inf")
+        self._ask_settling = False
+        self._ask_screen: tuple | None = None
+        self._ask_arrow_at: float | None = None
         # window_id -> (background id, monotonic time opened), for windows this
         # server opened with `claude attach`. The attached session's own pid is
         # the background worker's, not a descendant of the pane, so this map is

@@ -53,7 +53,7 @@ static int type_is_known(uint8_t t)
     case MSG_CAMERA: case MSG_CAMERA_FRAME: case MSG_PHOTO_CHUNK:
     case MSG_PHOTO_END: case MSG_PHOTO_DISCARD:
     case MSG_CAMERA_READY: case MSG_CAMERA_ACK: case MSG_PHOTO_SAVED:
-    case MSG_SUBSCREEN: case MSG_MIRROR: case MSG_TOUCH:
+    case MSG_SUBSCREEN: case MSG_MIRROR: case MSG_TOUCH: case MSG_ANSWER:
         return 1;
     default:
         return 0;
@@ -735,9 +735,24 @@ proto_result_t proto_apply_remote_note(char *out, size_t cap,
 proto_result_t proto_apply_state(uint8_t *state, char *detail, size_t cap,
                                  const uint8_t *payload, uint16_t len)
 {
-    if (!state || !payload || len < 2) return PROTO_ERR_PAYLOAD;
+    int has_ask;
+    uint32_t ask_id;
+    uint8_t flags;
+    return proto_apply_state_ask(state, detail, cap, &has_ask, &ask_id, &flags,
+                                 payload, len);
+}
+
+proto_result_t proto_apply_state_ask(uint8_t *state, char *detail, size_t cap,
+                                     int *has_ask, uint32_t *ask_id,
+                                     uint8_t *flags,
+                                     const uint8_t *payload, uint16_t len)
+{
+    if (!state || !has_ask || !ask_id || !flags || !payload || len < 2) {
+        return PROTO_ERR_PAYLOAD;
+    }
     const size_t n = payload[1];
-    if (n > PROTO_STATE_DETAIL_MAX || (size_t)len != 2 + n) {
+    if (n > PROTO_STATE_DETAIL_MAX ||
+        ((size_t)len != 2 + n && (size_t)len != 2 + n + PROTO_ASK_TAIL)) {
         return PROTO_ERR_PAYLOAD;
     }
     // A state this card has no word for reads as unknown, never as an error:
@@ -751,7 +766,27 @@ proto_result_t proto_apply_state(uint8_t *state, char *detail, size_t cap,
         }
         detail[take] = '\0';
     }
+    *has_ask = (size_t)len == 2 + n + PROTO_ASK_TAIL;
+    if (*has_ask) {
+        const uint8_t *t = payload + 2 + n;
+        *ask_id = (uint32_t)t[0] << 24 | (uint32_t)t[1] << 16 |
+                  (uint32_t)t[2] << 8 | t[3];
+        *flags = t[4];
+    }
     return PROTO_OK;
+}
+
+size_t proto_encode_answer(uint8_t *out, uint32_t ask_id,
+                           const uint8_t *keys, size_t len)
+{
+    if (!out || !keys || len == 0 || len > PROTO_MAX_KEY_PAYLOAD) return 0;
+    uint8_t body[PROTO_ANSWER_MAX];
+    body[0] = (uint8_t)(ask_id >> 24);
+    body[1] = (uint8_t)(ask_id >> 16);
+    body[2] = (uint8_t)(ask_id >> 8);
+    body[3] = (uint8_t)ask_id;
+    memcpy(body + 4, keys, len);
+    return proto_encode(out, MSG_ANSWER, body, (uint16_t)(4 + len));
 }
 
 size_t proto_encode_remote_open(uint8_t *out, int open)

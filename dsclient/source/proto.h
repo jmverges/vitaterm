@@ -59,7 +59,7 @@
 // grid of the wrong shape.
 #define PROTO_STR_(x) #x
 #define PROTO_STR(x) PROTO_STR_(x)
-#define PROTO_HELLO_CAPS "ds-term/1 mode snippets project clip remote state seal seal3 commands mirror " \
+#define PROTO_HELLO_CAPS "ds-term/1 mode snippets project clip remote state seal seal3 commands mirror ask " \
                          "grid=" PROTO_STR(PROTO_COLS) "x" PROTO_STR(PROTO_ROWS)
 #define PROTO_HELLO_CAPS_LEN (sizeof(PROTO_HELLO_CAPS) - 1)
 // A DSi-mode card adds " camera" to the core tokens: it is the gate for every
@@ -188,6 +188,12 @@ typedef enum {
     // while the server's MSG_MIRROR says a view is watching -- which is also
     // the proof that it knows this type.
     MSG_SUBSCREEN     = 0x20,   // cols, rows, flags, then 6 bytes a cell
+    // Enter, tied to the permission prompt it answers: u32be the ask id from
+    // the last MSG_STATE, then the key bytes.  The server writes them only if
+    // that prompt is still the one open, so a press meant for one prompt can
+    // never answer the next.  Sent only after a MSG_STATE carrying an ask id
+    // has arrived on this connection, which is the proof the server knows it.
+    MSG_ANSWER        = 0x21,
 
     MSG_NONCE      = 0x81,
     MSG_AUTH_OK    = 0x82,
@@ -367,6 +373,19 @@ proto_result_t proto_apply_remote_note(char *out, size_t cap,
 #define PROTO_STATE_DETAIL_MAX 24
 proto_result_t proto_apply_state(uint8_t *state, char *detail, size_t cap,
                                  const uint8_t *payload, uint16_t len);
+// The same, and STATE's tail for a card that announced "ask": the open
+// question's id and a flags byte.  *has_ask is 0 when the tail is absent.
+#define PROTO_ASK_TAIL 5
+#define PROTO_ASK_FLAG_DROPPED 0x01   // the last Enter was not delivered
+proto_result_t proto_apply_state_ask(uint8_t *state, char *detail, size_t cap,
+                                     int *has_ask, uint32_t *ask_id,
+                                     uint8_t *flags,
+                                     const uint8_t *payload, uint16_t len);
+// MSG_ANSWER: the ask id, then 1..PROTO_MAX_KEY_PAYLOAD key bytes.  `out`
+// holds PROTO_HEADER_SIZE + 4 + PROTO_MAX_KEY_PAYLOAD.  0 if it cannot.
+#define PROTO_ANSWER_MAX (4 + PROTO_MAX_KEY_PAYLOAD)
+size_t proto_encode_answer(uint8_t *out, uint32_t ask_id,
+                           const uint8_t *keys, size_t len);
 // The client's two REMOTE messages.  Return the framed length.
 size_t proto_encode_remote_open(uint8_t *out, int open);
 size_t proto_encode_remote_pick(uint8_t *out, uint8_t index, uint8_t action,

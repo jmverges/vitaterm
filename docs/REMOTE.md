@@ -145,6 +145,14 @@ Gated by the HELLO token `state`.
 | 0      | 1    | state: 0 unknown (no Claude session in the selected window, or `claude` not found), 1 idle, 2 working, 3 needs approval, 4 needs input |
 | 1      | 1    | detail length, 0..24 |
 | 2      | n    | detail, printable ASCII: `waitingFor` as Claude Code reports it ("permission prompt", "input needed" ...), empty otherwise |
+| 2+n    | 4    | only to a card that announced `ask`: the open question's id, big-endian |
+| 6+n    | 1    | only to a card that announced `ask`: flags, bit 0 this card's last Enter was not delivered |
+
+With `ask`, a card sends Enter as `ANSWER` (0x21) while the state is 3, and it
+reaches the prompt only if it names the question still open
+([PROTOCOL.md, "Answers"](PROTOCOL.md#answers)). Answering closes the
+question, and the card hears 2 working at once; a reading taken before the
+answer does not reopen it.
 
 Mapping from `status` / `waitingFor` of the session whose process lives in
 the dsterm tmux window that is currently selected:

@@ -551,6 +551,13 @@ static int link_connected = 0;
 // answer is "server scrolls", so 0 here before then means "not told yet".
 static int app_scrolls = 0;
 static int app_scrolls_known = 0;
+// The permission prompt open on the computer, as the last MSG_STATE said:
+// whether this connection has been sent an ask id at all (the proof that the
+// server knows MSG_ANSWER), the id, and whether the state is an approval.
+// An Enter pressed while it is goes as an ANSWER naming that prompt.
+static int ask_known = 0;
+static uint32_t ask_id = 0;
+static int ask_open = 0;
 
 // Battery, charger, and signal, read fresh each second.
 //
@@ -918,6 +925,9 @@ static void connection_forget(int tidy_pages)
     status_scroll_regime_clear();
     app_scrolls = 0;
     app_scrolls_known = 0;
+    // The prompt was the old connection's; the new one says again.
+    ask_known = 0;
+    ask_open = 0;
     // The probe belonged to the connection that just died. Carrying its
     // round trip across would print a number measured against a socket that
     // no longer exists.
@@ -1089,8 +1099,18 @@ static int send_key_seq(const char *seq, size_t seq_len, unsigned long *tx)
         status("refused an oversized key frame (%u bytes)", (unsigned)seq_len);
         return 0;
     }
-    const size_t n = proto_encode(out, MSG_KEY, (const uint8_t *)seq, (uint16_t)seq_len);
-    if (send_all(out, n)) {
+    // Enter while Claude is asking: tie it to the prompt on screen, so it
+    // reaches that prompt or nothing (docs/PROTOCOL.md, "Answers").
+    static uint8_t answer[PROTO_HEADER_SIZE + PROTO_ANSWER_MAX];
+    const uint8_t *frame = out;
+    size_t n;
+    if (ask_known && ask_open && memchr(seq, '\r', seq_len)) {
+        n = proto_encode_answer(answer, ask_id, (const uint8_t *)seq, seq_len);
+        frame = answer;
+    } else {
+        n = proto_encode(out, MSG_KEY, (const uint8_t *)seq, (uint16_t)seq_len);
+    }
+    if (n && send_all(frame, n)) {
         (*tx)++;
         // A lone CR is a submission -- the composer's final frame, the ENT
         // key, or the physical A button all arrive here as one byte. That is
@@ -3743,8 +3763,22 @@ static void handle_message(msg_type_t type, const uint8_t *payload, uint16_t len
     case MSG_STATE: {
         uint8_t st = 0;
         char detail[PROTO_STATE_DETAIL_MAX + 1];
-        if (proto_apply_state(&st, detail, sizeof(detail), payload, len) ==
-            PROTO_OK) {
+        int has_ask = 0;
+        uint32_t id = 0;
+        uint8_t flags = 0;
+        if (proto_apply_state_ask(&st, detail, sizeof(detail), &has_ask, &id,
+                                  &flags, payload, len) == PROTO_OK) {
+            if (has_ask) {
+                ask_known = 1;
+                ask_id = id;
+                ask_open = st == PROTO_STATE_APPROVAL;
+                // The computer held back an Enter: the prompt it was meant
+                // for had gone, or this card had not seen it yet.  Say so,
+                // or the press just seems lost.
+                if (flags & PROTO_ASK_FLAG_DROPPED) {
+                    status("not sent: the screen changed -- look, then press again");
+                }
+            }
             chime_claude_state(st);
             refresh_sub();
         }

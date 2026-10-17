@@ -118,6 +118,7 @@ card announced, or proof that the server understands it (see
 | 0x1E | `PHOTO_END` | `camera`, and a `CAMERA_READY` received | u8 format, u8 camera, u32 total, u32 CRC-32 |
 | 0x1F | `PHOTO_DISCARD` | `camera`, and a `CAMERA_READY` received | u16 id the server issued in `PHOTO_SAVED` |
 | 0x20 | `SUBSCREEN` | `mirror`, and a `MIRROR` saying a view is watching | the bottom screen as text: u8 cols, u8 rows, u8 flags, then 42x24 cells of 6 bytes (6,051 bytes) |
+| 0x21 | `ANSWER` | `ask`, and a `STATE` carrying an ask id received | u32 ask id, then 1 to 64 key bytes: [Answers](#answers) |
 
 Before authentication the server accepts only `HELLO`, `AUTH`, `PAIR_HELLO`,
 `PAIR_CONFIRM` and `PAIR_ACCEPT`; anything else drops the connection, so an
@@ -178,6 +179,7 @@ not fit).
 | `clip` | Send `CLIP` (only if the server was also started with `--clip`) |
 | `remote` | Send `REMOTE` and accept `REMOTE_OPEN` / `REMOTE_PICK` |
 | `state` | Send `STATE` |
+| `ask` | Add the open question's id to `STATE`, and accept `ANSWER` ([Answers](#answers)) |
 | `seal` | Sent alongside `seal3`, so that a server from before encryption answers `AUTH_OK` `seal`, which the card can name and refuse |
 | `seal3` | Required. A `HELLO` without it is refused with `ERROR` before `AUTH_OK` |
 | `cn=<hex>` | Required: the card's nonce for this connection, 16 bytes as 32 lowercase hex digits, fresh every time. It goes into the SEAL keys ([SEAL.md](SEAL.md)) |
@@ -347,7 +349,53 @@ second.
 2 working, 3 needs approval, 4 needs input, with Claude Code's own
 `waitingFor` text (at most 24 bytes) while it waits. It is sent once after
 authentication and then only on change. It names nothing and grants nothing;
-the worst a forged one can do is play the wrong sound.
+the worst a forged one can do is play the wrong sound. To a card that
+announced `ask`, it carries five more bytes: the open question's id (u32) and
+a flags byte (bit 0: this card's last Enter was not delivered). See
+[Answers](#answers).
+
+### Answers
+
+The card has no "approve" message. A permission prompt belongs to Claude
+Code, and the card answers it the way a keyboard does: A sends Enter, X sends
+Escape. What `ask` adds is that an Enter can only reach the prompt it was
+meant for.
+
+Every permission prompt is a question with an id. The server opens one when
+a `claude agents` reading says the session needs approval, and gives it a new
+id when the selected window changes, or when the screen changes under it with
+no arrow from the card in the last half second to explain it (someone answered
+at the computer, and what is on screen is no longer what the card was looking
+at). A question closes when an answer reaches it; a reading taken before that
+answer cannot reopen it.
+
+While `STATE` says a question is open, the card sends any key frame with an
+Enter in it as `ANSWER`, naming the id it was last sent. The server writes
+the bytes only if that question is still the one open, and closes it.
+Otherwise it drops them, and the next `STATE` sets the flag, so the card can
+say "not sent: the screen changed -- look, then press again". From an `ask`
+card, a plain `KEY` with an Enter in it is held back while a question is
+open: the card sends Enter as `ANSWER` once it knows of the question, so a
+plain one was sent before it did. The same holds for a moment after any Enter
+or Escape from the card reaches the session, until a reading taken since then
+says what is on screen (at most three seconds): the next prompt may already
+be up with no question open for it. That is what makes a double press safe.
+
+So an Enter pressed for one prompt, and delayed for any reason, never answers
+the next one: a double press, a frame held up on the way, or a prompt
+answered at the computer while the press was in flight. Escape, arrows and
+ordinary typing are never held back: declining is safe wherever it lands, and
+an arrow only moves the highlight. A digit typed on the keyboard still picks
+a numbered choice, as it would on any keyboard. One case is out of reach: if
+someone at the computer answers a prompt and the next one appears within half
+a second of an arrow pressed on the DS, the server takes that change for the
+arrow moving the highlight, and both prompts share an id.
+`tests/test_answers_random.py` runs the rule against random interleavings of
+prompts, presses, late readings and answers at the computer, and checks that
+every Enter lands on the prompt it was pressed for, outside that one case.
+
+There is no timeout anywhere in this. A prompt waits in Claude Code until a
+key reaches it, so a lost link never approves or declines anything.
 
 The full contract, including every field table and the polling cadence, is in
 [REMOTE.md](REMOTE.md).

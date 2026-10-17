@@ -4354,6 +4354,15 @@ static void print_interop_vectors(void)
                       (uint16_t)sizeof(CLIP_WITHHELD));
     hex(eframe, en, eh);
     printf("INTEROP clip-withheld %s\n", eh);
+
+    // An Enter tied to question 0xC0FFEE01: the server must read the same id
+    // and the same key byte out of it.
+    uint8_t aframe[PROTO_HEADER_SIZE + PROTO_ANSWER_MAX];
+    const size_t an = proto_encode_answer(aframe, 0xC0FFEE01u,
+                                          (const uint8_t *)"\r", 1);
+    char ah[2 * sizeof(aframe) + 1];
+    hex(aframe, an, ah);
+    printf("INTEROP answer %s\n", ah);
 }
 
 int main(void)

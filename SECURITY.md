@@ -24,6 +24,14 @@
   message from the server — `PHOTO_SAVED` — carries the path of a picture it
   just saved, and it lands only in the composer. A fully compromised client
   can type what a person at your keyboard could type, and nothing more.
+- **An approval reaches only the prompt it was meant for.** The DS answers a
+  permission prompt the way a keyboard does (A is Enter, X is Escape), and
+  each prompt gets an id. An Enter pressed while a prompt is open names it,
+  and the computer writes it only if that prompt is still the one waiting, so
+  a double press, a delayed frame or a prompt answered at the computer in the
+  meantime never approves the next one. Nothing times out: a prompt waits
+  until a key reaches it, so a dropped link approves nothing
+  ([Answers](docs/PROTOCOL.md#answers)).
 - **Camera.** The card sends pixels and intents; the server alone picks the
   folder (`.dsterm/photos` in the project on screen, or `--photo-dir`) and the
   name. The path a `PHOTO_SAVED` answers with lands only in the composer, so
@@ -113,6 +121,7 @@ fail if it stopped being true. CI runs all of them on every push.
 | A recorded session replayed at the console cannot make it reuse a keystream | the card nonce (`boot_connect_nonce` in `boot.c`, `cn=` in the HELLO), `seal_start` | `tests/test_encryption.py` (`test_a_recorded_session_replayed_at_a_card_gets_nowhere`, `test_every_connection_has_its_own_card_nonce`), `dsclient/tests/test_seal.c` (a new card nonce under a replayed server nonce gives new keys) |
 | Encryption cannot be negotiated away, and a version mismatch is never taken for a revoked key | `server.py` (the AUTH branch), `client.py`, `dsclient/source/main.c` (`handshake`) | `tests/test_seal.py` (`test_without_seal3_and_a_card_nonce_the_card_is_refused_by_name`, `test_a_card_names_a_server_from_before_encryption`, `test_a_card_refuses_an_auth_ok_without_seal`) |
 | Nothing but HELLO, AUTH and pairing before authentication | `PRE_AUTH_ALLOWED` in `protocol.py`, enforced in `Server._handle` (`server.py`) | `tests/test_server.py` (`TestAuthorization`), `tests/test_fuzz.py` |
+| An Enter reaches only the permission prompt it was pressed for | `server_agents.py` (questions), `dsclient/source/main.c` (`send_key_seq`) | `tests/test_answers.py` (a second press, a reading from before the answer, a plain Enter that crossed the prompt, the screen changing under it); `ANSWER` and `STATE`'s ask tail pinned C against Python by `tools/crosscheck.py` and `dsclient/tests/test_remote.c` |
 | No message from the card runs a command, reads a file or names a path | `protocol.py`, each handler | `tests/test_protocol.py`: the type list, each with its written argument |
 | Malformed input costs the connection, never the server or the card | every decoder and reader | `tests/test_fuzz.py` (decoders, SEAL, the server's own terminal emulator, a live server under card, pre-auth and view noise, and a program printing noise through a real PTY while PINGs are timed), `dsclient/tests/test_fuzz.c` (the frame reader, every server-to-client decoder, SEAL, discovery, the config, profile, snippet, settings and recent-prompt files, short typed texts, the list stagers, WAVs and COMMANDS, each input in an exact-size buffer, under ASan and UBSan) |
 | REMOTE runs only `claude`, with arguments, never a shell | `remote.py`, `server_agents.py` | `tests/test_remote.py` (`test_new_window_argv_is_exact_and_shell_free`, the pick and row-check tests) |

@@ -513,6 +513,15 @@ class TestNoSideChannels:
         # TAPS setting is on, which is off until the person holding the DS
         # turns it on, and GOD MODE cannot be armed by one. Gated like
         # CAMERA: "mirror" in the HELLO, nothing sent before MIRROR.
+        #
+        # ANSWER is KEY with a condition attached, and so narrower than KEY:
+        # the same key bytes, bounded the same way, plus the id of the
+        # question they answer, which only makes the server write them in
+        # fewer cases -- when that question is still the one open -- never
+        # more. The id is a number the server issued; it names nothing. For
+        # an "ask" card the server also holds back a plain KEY carrying Enter
+        # while a question is open, which again only refuses. STATE's tail is
+        # that id and one flag byte, display state like the rest of STATE.
         allowed = {
             "HELLO", "AUTH", "KEY", "RESYNC", "PING", "VIEW", "SESSION_PICK",
             "NONCE", "AUTH_OK", "AUTH_FAIL",
@@ -523,7 +532,7 @@ class TestNoSideChannels:
             "REMOTE", "REMOTE_NOTE", "REMOTE_OPEN", "REMOTE_PICK", "STATE",
             "CAMERA", "CAMERA_FRAME", "PHOTO_CHUNK", "PHOTO_END",
             "PHOTO_DISCARD", "CAMERA_READY", "CAMERA_ACK", "PHOTO_SAVED",
-            "SUBSCREEN", "MIRROR", "TOUCH",
+            "SUBSCREEN", "MIRROR", "TOUCH", "ANSWER",
             "ERROR",
         }
         assert {m.name for m in MsgType} == allowed

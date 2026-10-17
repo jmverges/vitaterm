@@ -118,6 +118,14 @@ class MsgType(IntEnum):
     # `dsterm view`: the card's bottom screen as text (see SUBSCREEN below),
     # sent only while this server's MIRROR says a view is watching.
     SUBSCREEN = 0x20
+    # A key tied to the question it answers: u32be the ask id from the STATE
+    # the card last heard, then 1..MAX_KEY_PAYLOAD key bytes. Sent only by a
+    # card that announced "ask", and only after a STATE carrying an ask id
+    # arrived on this connection (the proof rule). The server writes the
+    # bytes only if that question is still the one open, so an Enter pressed
+    # for one permission prompt can never answer the next. Like KEY it is key
+    # bytes and nothing else: it names no command and no file.
+    ANSWER = 0x21
 
     # server -> client
     NONCE = 0x81
@@ -799,6 +807,9 @@ FEATURE_STATE = "state"
 FEATURE_COMMANDS = "commands"
 FEATURE_CAMERA = "camera"
 FEATURE_MIRROR = "mirror"
+# STATE carries the open question's id and the card ties its Enter to it
+# (ANSWER). See docs/PROTOCOL.md, "Answers".
+FEATURE_ASK = "ask"
 
 
 def encode_hello(features: tuple[str, ...] = ()) -> bytes:
@@ -1416,20 +1427,43 @@ _STATE_MAX = STATE_NEEDS_INPUT
 STATE_DETAIL_MAX = 24
 
 
-def encode_state(state: int, detail: str = "") -> bytes:
+# STATE's tail for a card that announced "ask": the open question's id
+# (u32be) and one flags byte.
+ASK_TAIL = 5
+# Flag: the last answer or Enter from this card was not delivered, because
+# the question it was meant for is gone or had not reached the card yet.
+ASK_FLAG_DROPPED = 0x01
+
+
+def encode_state(state: int, detail: str = "", ask: tuple[int, int] | None = None) -> bytes:
     """state (u8), detail_len (u8), detail: what the session on screen is doing.
 
     ``detail`` is Claude Code's own ``waitingFor`` while it waits, and empty
     otherwise; printable ASCII, at most 24 bytes, refused rather than clamped
     for the reason _remote_text gives.
+
+    ``ask`` is (ask id, flags), only for a card that announced "ask": the id
+    of the question an ANSWER must name, and ASK_FLAG_DROPPED.
     """
     if not 0 <= state <= _STATE_MAX:
         raise ProtocolError(f"state {state} outside 0..{_STATE_MAX}")
     raw = _remote_text(detail, STATE_DETAIL_MAX, "state detail")
-    return encode(MsgType.STATE, bytes((state, len(raw))) + raw)
+    body = bytes((state, len(raw))) + raw
+    if ask is not None:
+        ask_id, flags = ask
+        if not 0 <= ask_id <= 0xFFFFFFFF or not 0 <= flags <= 0xFF:
+            raise ProtocolError(f"ask id {ask_id} or flags {flags} out of range")
+        body += struct.pack(">IB", ask_id, flags)
+    return encode(MsgType.STATE, body)
 
 
 def decode_state(payload: bytes) -> tuple[int, str]:
+    state, detail, _ = decode_state_ask(payload)
+    return state, detail
+
+
+def decode_state_ask(payload: bytes) -> tuple[int, str, tuple[int, int] | None]:
+    """(state, detail, (ask id, flags) or None)."""
     if len(payload) < 2:
         raise ProtocolError(f"state payload too short: {len(payload)}")
     state, length = payload[0], payload[1]
@@ -1437,12 +1471,15 @@ def decode_state(payload: bytes) -> tuple[int, str]:
         raise ProtocolError(f"state {state} outside 0..{_STATE_MAX}")
     if length > STATE_DETAIL_MAX:
         raise ProtocolError(f"state detail_len {length} above {STATE_DETAIL_MAX}")
-    if len(payload) != 2 + length:
+    if len(payload) not in (2 + length, 2 + length + ASK_TAIL):
         raise ProtocolError("declared state detail length does not match the payload")
-    detail = payload[2:]
+    detail = payload[2:2 + length]
     if any(b < 0x20 or b > 0x7E for b in detail):
         raise ProtocolError("state detail must be printable ASCII")
-    return state, detail.decode("ascii")
+    ask = None
+    if len(payload) == 2 + length + ASK_TAIL:
+        ask = struct.unpack(">IB", payload[2 + length:])
+    return state, detail.decode("ascii"), ask
 
 
 # Every frame the server sends fits one TCP segment of the DS's 536-byte MSS
@@ -1549,6 +1586,19 @@ def decode_key(payload: bytes) -> bytes:
     if len(payload) > MAX_KEY_PAYLOAD:
         raise ProtocolError(f"key payload {len(payload)} exceeds {MAX_KEY_PAYLOAD}")
     return payload
+
+
+def encode_answer(ask_id: int, data: bytes) -> bytes:
+    """ANSWER: u32be ask id, then the key bytes, bounded as KEY's are."""
+    if not 0 <= ask_id <= 0xFFFFFFFF:
+        raise ProtocolError(f"ask id {ask_id} out of range")
+    return encode(MsgType.ANSWER, struct.pack(">I", ask_id) + encode_key(data)[HEADER.size:])
+
+
+def decode_answer(payload: bytes) -> tuple[int, bytes]:
+    if len(payload) < 5:
+        raise ProtocolError(f"answer payload too short: {len(payload)}")
+    return struct.unpack(">I", payload[:4])[0], decode_key(payload[4:])
 
 
 # -- device identity and pairing ----------------------------------------------

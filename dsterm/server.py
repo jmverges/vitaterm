@@ -52,6 +52,7 @@ from .protocol import (
     FEATURE_STATE,
     FEATURE_COMMANDS,
     FEATURE_MIRROR,
+    FEATURE_ASK,
     MAX_PAYLOAD,
     PRE_AUTH_ALLOWED,
     FrameReader,
@@ -62,6 +63,7 @@ from .protocol import (
     Seal,
     SealError,
     seal_key,
+    decode_answer,
     decode_key,
     encode,
     encode_cursor,
@@ -970,6 +972,10 @@ class Server(CameraMixin, PairingMixin, ScrollbackMixin, MirrorMixin, SessionsMi
             self._on_key(c, msg)
             return
 
+        if msg.type is MsgType.ANSWER:
+            self._on_answer(c, msg)
+            return
+
         if msg.type is MsgType.SESSION_PICK:
             self._on_session_pick(c, msg)
             return
@@ -1031,6 +1037,7 @@ class Server(CameraMixin, PairingMixin, ScrollbackMixin, MirrorMixin, SessionsMi
         c.caps.state = FEATURE_STATE in features
         c.caps.commands = FEATURE_COMMANDS in features
         c.caps.mirror = FEATURE_MIRROR in features
+        c.caps.ask = FEATURE_ASK in features
         # Asked for AND offered: under --no-camera this stays False, so
         # no READY is sent and any camera frame is a protocol error.
         c.caps.camera = FEATURE_CAMERA in features and self._camera_offered()
@@ -1167,15 +1174,38 @@ class Server(CameraMixin, PairingMixin, ScrollbackMixin, MirrorMixin, SessionsMi
         except ProtocolError as exc:
             self._drop(c, f"bad key payload: {exc}")
             return
+        self._type(c, keys, None)
+
+    def _on_answer(self, c: ClientState, msg: Message) -> None:
+        """ANSWER: key bytes tied to the question they answer."""
+        if not c.caps.ask:
+            # Only a card that announced "ask" is ever sent an ask id, and
+            # only one that has been sent one may send this.
+            self._drop(c, "ANSWER from a card that did not announce ask")
+            return
+        try:
+            ask_id, keys = decode_answer(msg.payload)
+        except ProtocolError as exc:
+            self._drop(c, f"bad answer payload: {exc}")
+            return
+        self._type(c, keys, ask_id)
+
+    def _type(self, c: ClientState, keys: bytes, ask_id: int | None) -> None:
         # Typing returns to the live screen. Otherwise the keystroke lands
         # somewhere the user cannot see, which is how a terminal loses
         # someone's trust fastest.
         c.last_key_at = time.monotonic()
+        if not self._gate_keys(c, keys, ask_id):
+            return
         if self._view_to_live(c):
             self._resync()
-        if self._session is not None and not self._session.write(keys):
-            self._emit("input dropped: the session has stopped reading "
-                       "what is typed")
+        if self._session is not None:
+            if not self._session.write(keys):
+                self._emit("input dropped: the session has stopped reading "
+                           "what is typed")
+            else:
+                self._ask_keys_sent(keys)
+                self._answered(c, keys)
 
     # -- helpers the features share --------------------------------------
 
@@ -1252,6 +1282,7 @@ class Server(CameraMixin, PairingMixin, ScrollbackMixin, MirrorMixin, SessionsMi
             return
 
         now = time.monotonic()
+        self._ask_tick(live.cells, c, now)
         snapshot = self._sessions_tick(now, stats.bytes_in)
         self._feeds_tick(c, now)
 

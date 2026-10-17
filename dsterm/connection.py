@@ -131,6 +131,9 @@ class Caps:
     # QUICK's slash commands, and `dsterm view` (view.py).
     commands: bool = False
     mirror: bool = False
+    # STATE carries the open question's id, and this card ties its Enter to
+    # it with ANSWER (server_agents.py, "questions").
+    ask: bool = False
     # The camera: HELLO-announced AND offered by this server. Without it no
     # camera message from this connection is legitimate.
     camera: bool = False
@@ -242,9 +245,12 @@ class AgentsState:
     # outbox before it is sent. The latest note wins.
     note: bytes | None = None
     last_pick_at: float = float("-inf")
-    # The STATE reading this card last heard; None until the first one after
-    # auth, so it is sent once and then only on change.
-    state_sent: tuple[int, str] | None = None
+    # The STATE this card last heard -- (state, detail) and, for an "ask"
+    # card, the ask id and flags; None until the first one after auth, so it
+    # is sent once and then only on change.
+    state_sent: tuple | None = None
+    # An answer or Enter from this card was dropped; the next STATE says so.
+    ask_dropped: bool = False
 
 
 @dataclass(slots=True)

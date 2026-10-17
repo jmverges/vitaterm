@@ -319,6 +319,34 @@ static void test_remote_matches_the_server(void)
                                 (uint16_t)(n - 6)) == PROTO_OK &&
               st == PROTO_STATE_APPROVAL && strcmp(detail, "permission prompt") == 0,
           "the server's needs-approval STATE did not decode");
+    // The same STATE as the server sends it to an "ask" card: the open
+    // question's id and the dropped flag ride behind the detail.
+    {
+        int has_ask = 0;
+        uint32_t ask_id = 0;
+        uint8_t flags = 0;
+        n = unhex("445301a1001803117065726d697373696f6e2070726f6d7074c0ffee0101",
+                  f, sizeof(f));
+        CHECK(proto_apply_state_ask(&st, detail, sizeof(detail), &has_ask,
+                                    &ask_id, &flags, f + 6,
+                                    (uint16_t)(n - 6)) == PROTO_OK &&
+                  st == PROTO_STATE_APPROVAL &&
+                  strcmp(detail, "permission prompt") == 0 && has_ask &&
+                  ask_id == 0xC0FFEE01u && flags == PROTO_ASK_FLAG_DROPPED,
+              "the server's STATE with an ask id did not decode");
+        CHECK(proto_apply_state(&st, detail, sizeof(detail), f + 6,
+                                (uint16_t)(n - 6)) == PROTO_OK,
+              "a STATE with an ask id broke the plain decoder");
+        CHECK(proto_apply_state_ask(&st, detail, sizeof(detail), &has_ask,
+                                    &ask_id, &flags, f + 6,
+                                    (uint16_t)(n - 7)) != PROTO_OK,
+              "a STATE with a short ask tail was accepted");
+        n = unhex("445301a100020100", f, sizeof(f));
+        CHECK(proto_apply_state_ask(&st, detail, sizeof(detail), &has_ask,
+                                    &ask_id, &flags, f + 6,
+                                    (uint16_t)(n - 6)) == PROTO_OK && !has_ask,
+              "a STATE without the tail claimed an ask id");
+    }
     n = unhex("445301a100020100", f, sizeof(f));
     CHECK(proto_apply_state(&st, detail, sizeof(detail), f + 6,
                             (uint16_t)(n - 6)) == PROTO_OK &&

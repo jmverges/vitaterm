@@ -76,7 +76,7 @@ def hello_vector(camera: bool = False, card_nonce: bool = False) -> str:
     from dsterm.protocol import hello_card_nonce, hello_device_id, hello_features
 
     payload = (b"ds-term/1 mode snippets project clip remote state seal seal3 "
-               b"commands mirror grid=42x24")
+               b"commands mirror ask grid=42x24")
     if camera:
         payload += b" camera"
     payload += b" id=deadbeef"
@@ -85,11 +85,21 @@ def hello_vector(camera: bool = False, card_nonce: bool = False) -> str:
     features = hello_features(payload)
     assert hello_device_id(features) == "deadbeef"
     assert {"mode", "snippets", "project", "clip", "remote", "state", "seal",
-            "seal3", "commands", "mirror"} <= features
+            "seal3", "commands", "mirror", "ask"} <= features
     assert ("camera" in features) == camera
     assert hello_card_nonce(features) == (
         bytes(0x11 * i for i in range(16)) if card_nonce else None)
     return payload.hex()
+
+
+def answer_vector() -> str:
+    """test_core.c's ANSWER, rebuilt with the server's encoder, after the
+    server's decoder has read the same id and key out of it."""
+    from dsterm.protocol import HEADER_SIZE, decode_answer, encode_answer
+
+    frame = encode_answer(0xC0FFEE01, b"\r")
+    assert decode_answer(frame[HEADER_SIZE:]) == (0xC0FFEE01, b"\r")
+    return frame.hex()
 
 
 def chacha_vector() -> str:
@@ -227,6 +237,8 @@ def main() -> int:
         # (i*31)&0xFF pixels, one KB chunk at offset 1024 of (i&0xFF), the
         # photo's end with the known CRC of "123456789", and a discard of id 7.
         "camera": encode_camera(CAMERA_OUTER).hex(),
+        # Enter, tied to question 0xC0FFEE01 (test_core.c).
+        "answer": answer_vector(),
         "camera-frame": encode_camera_frame(
             PREVIEW_FLAG_STILL, 0xAB,
             bytes((i * 31) & 0xFF for i in range(PREVIEW_BYTES))).hex(),
