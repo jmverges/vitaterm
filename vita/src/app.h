@@ -29,7 +29,7 @@
 #define TERM_W (PROTO_COLS * CELL_W)
 #define TERM_H (PROTO_ROWS * CELL_H)
 
-#define DATA_ROOT "ux0:data/dsterm"
+#define DATA_ROOT "ux0:data/vitaterm"
 
 // Colours, RGBA8 as vita2d takes them (0xAABBGGRR).
 #define COL_BG       0xFF000000u

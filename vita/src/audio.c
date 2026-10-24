@@ -72,11 +72,11 @@ static int audio_thread(SceSize args, void *argp)
 
 void audio_init(void)
 {
-    sceKernelCreateLwMutex(&lock, "dsterm_audio", 0, 0, NULL);
+    sceKernelCreateLwMutex(&lock, "vitaterm_audio", 0, 0, NULL);
     port = sceAudioOutOpenPort(SCE_AUDIO_OUT_PORT_TYPE_BGM, GRAIN, MIX_RATE,
                                SCE_AUDIO_OUT_MODE_MONO);
     if (port < 0) return;
-    const SceUID t = sceKernelCreateThread("dsterm_audio", audio_thread, 0x10000100,
+    const SceUID t = sceKernelCreateThread("vitaterm_audio", audio_thread, 0x10000100,
                                            0x10000, 0, 0, NULL);
     if (t >= 0) sceKernelStartThread(t, 0, NULL);
 }

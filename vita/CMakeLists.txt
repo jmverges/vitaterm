@@ -8,11 +8,11 @@ if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
   endif()
 endif()
 
-project(dsterm-vita C)
+project(vitaterm C)
 include("$ENV{VITASDK}/share/vita.cmake" REQUIRED)
 
 set(VITA_APP_NAME "Claude Terminal")
-set(VITA_TITLEID  "DSCT00001")
+set(VITA_TITLEID  "VTRM00001")
 set(VITA_VERSION  "01.00")
 
 # The grid this client draws; the computer runs  dsterm serve --grid 120x32.

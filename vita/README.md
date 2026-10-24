@@ -1,4 +1,4 @@
-# Claude Terminal for PS Vita
+# vitaterm: Claude Code on a PS Vita
 
 A Vita client for the same `dsterm` server the DS card talks to: Claude Code
 runs on your computer, the Vita is its screen and controller.
@@ -32,8 +32,8 @@ Then `dsterm pair` when the Vita asks for it.
 | Start | Camera |
 | L+R held | Show the buttons |
 
-Settings and paired computers live in `ux0:data/dsterm`. Snippets can go in
-`ux0:data/dsterm/snippets.txt` (the DS card's format), or the computer pushes
+Settings and paired computers live in `ux0:data/vitaterm`. Snippets can go in
+`ux0:data/vitaterm/snippets.txt` (the DS card's format), or the computer pushes
 its own.
 
 ## Building
@@ -46,7 +46,7 @@ With [VitaSDK](https://vitasdk.org) (or the `vitasdk/vitasdk` Docker image):
 `tools/genlivearea.py` the LiveArea images; both need Pillow.
 
 A build with `-DVITA_SCRIPT=1` reads timed button presses from
-`ux0:data/dsterm/script.txt` (one `frame hex-buttons` per line), for testing in
+`ux0:data/vitaterm/script.txt` (one `frame hex-buttons` per line), for testing in
 an emulator that takes no input.
 
 ## Fonts

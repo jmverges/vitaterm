@@ -36,7 +36,7 @@ void input_poll(void)
     memset(&pad, 0, sizeof(pad));
     sceCtrlPeekBufferPositive(0, &pad, 1);
 #ifdef VITA_SCRIPT
-    // Test builds only: buttons from ux0:data/dsterm/script.txt, one
+    // Test builds only: buttons from ux0:data/vitaterm/script.txt, one
     // "frame hex-buttons" per line, for an emulator that takes none.
     {
         static unsigned at[64], buttons[64];
