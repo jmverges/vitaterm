@@ -128,7 +128,7 @@ static void snippets_menu(void)
     }
     static int sel;
     const int pick = list("Snippets", items, n, &sel,
-                          "No snippets. Put them in ux0:data/dsterm/snippets.txt, "
+                          "No snippets. Put them in ux0:data/vitaterm/snippets.txt, "
                           "or let the computer push its own.");
     if (pick >= 0) link_text(snippets.items[pick].body, strlen(snippets.items[pick].body));
 }

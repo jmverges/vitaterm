@@ -297,7 +297,7 @@ void cam_run(void)
     if (!conn.camera_ready) {
         for (int f = 0; f < 150 && !(in.down & SCE_CTRL_CIRCLE); f++) {
             app_tick();
-            gfx_working("Camera", "This computer's dsterm does not take pictures "
+            gfx_working("Camera", "This computer's vitaterm does not take pictures "
                                   "(it may run with --no-camera).");
         }
         return;

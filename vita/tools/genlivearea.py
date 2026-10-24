@@ -36,6 +36,6 @@ save(bg, OUT / "livearea/contents/bg.png")
 
 start = Image.new("RGB", (280, 158), BG)
 prompt(start, 52, (140, 62))
-ImageDraw.Draw(start).text((140, 122), "Claude Terminal", font=ImageFont.truetype(sans, 22),
+ImageDraw.Draw(start).text((140, 122), "vitaterm", font=ImageFont.truetype(sans, 24),
                            fill=TEXT, anchor="mm")
 save(start, OUT / "livearea/contents/startup.png")

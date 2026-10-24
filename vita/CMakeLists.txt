@@ -11,7 +11,7 @@ endif()
 project(vitaterm C)
 include("$ENV{VITASDK}/share/vita.cmake" REQUIRED)
 
-set(VITA_APP_NAME "Claude Terminal")
+set(VITA_APP_NAME "vitaterm")
 set(VITA_TITLEID  "VTRM00001")
 set(VITA_VERSION  "01.00")
 

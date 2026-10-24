@@ -104,7 +104,7 @@ For the console side, see the error table in
   terminal app you ran `dsterm serve` from) if it is listed and off.
 - **Windows: it works while an Ubuntu window is open, and stops after you
   close it.** WSL shuts down without a window open, service or not. The
-  `.wslconfig` settings in the [README's Windows setup](README.md#3-install-the-server-on-your-computer) keep it
+  `.wslconfig` settings in the [README's Windows setup](README-DS.md#3-install-the-server-on-your-computer) keep it
   running.
 - **The session died the instant it started** (tmux shows `[exited]`). The
   service could not find `claude`. It runs with a fixed PATH that includes

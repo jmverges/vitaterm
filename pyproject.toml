@@ -39,6 +39,7 @@ dev = [
 # the same code. bin/dsterm is the same thing for a checkout.
 [project.scripts]
 dsterm = "dsterm.cli:main"
+vitaterm = "dsterm.vita:main"
 
 
 [tool.setuptools]

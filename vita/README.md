@@ -1,7 +1,10 @@
-# vitaterm: Claude Code on a PS Vita
+# vitaterm: the Vita app
 
-A Vita client for the same `dsterm` server the DS card talks to: Claude Code
-runs on your computer, the Vita is its screen and controller.
+How to use it is in the [main README](../README.md); this page is for building
+it.
+
+The app talks to the same server the DS card does: Claude Code runs on your
+computer, the Vita is its screen and controller.
 
 It is not the DS interface on a Vita. There is one 960x544 screen, a 120x32
 terminal in an 8x16 font, the system keyboard for typing, and the camera for
@@ -9,13 +12,8 @@ sending Claude a picture. The protocol half (framing, the encrypted link,
 pairing, discovery, profiles, sessions, the sounds) is the DS client's own
 code in `dsclient/source`, compiled unchanged.
 
-## On the computer
-
-The Vita's terminal is 120x32, so the server has to match:
-
-    dsterm serve --grid 120x32
-
-Then `dsterm pair` when the Vita asks for it.
+The computer runs `vitaterm`, which is the DS project's `dsterm` with the
+Vita's grid (120x32) as its default (`dsterm/vita.py`).
 
 ## Buttons
 

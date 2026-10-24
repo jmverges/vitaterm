@@ -4,7 +4,7 @@ This page is for a developer who has just cloned the repository. It describes
 every component, how the two halves talk, the flows that tie them together,
 and where to make a given change. The wire format itself is specified in
 [PROTOCOL.md](PROTOCOL.md). Setup and day-to-day use are in the
-[README](../README.md) and [GETTING_STARTED.md](GETTING_STARTED.md).
+[README](../README-DS.md) and [GETTING_STARTED.md](GETTING_STARTED.md).
 
 ## The big picture
 

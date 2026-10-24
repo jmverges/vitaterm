@@ -1,7 +1,7 @@
 # After setup
 
 The first setup, step by step, and pairing are in the
-[README](../README.md#setup). This page covers what comes after: updating,
+[README](../README-DS.md#setup). This page covers what comes after: updating,
 starting WSL by itself on Windows, installing from source, and uninstalling.
 
 ## Updating

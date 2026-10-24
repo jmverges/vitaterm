@@ -488,7 +488,7 @@ static int read_some(void)
 static void on_nonce(const uint8_t *payload, uint16_t len)
 {
     if (len != PROTO_NONCE_SIZE) {
-        fail("not a dsterm server");
+        fail("not a vitaterm server");
         return;
     }
     memcpy(nonce, payload, PROTO_NONCE_SIZE);
@@ -541,7 +541,7 @@ static void on_auth_reply(msg_type_t type, const uint8_t *payload, uint16_t len)
     }
     if (len != 5 || memcmp(payload, "seal3", 5) != 0) {
         snprintf(conn.refusal, sizeof(conn.refusal),
-                 "the computer runs an older dsterm: update it there");
+                 "the computer runs an older server: update vitaterm there");
         fail("refused: old server");
         return;
     }
@@ -564,11 +564,11 @@ void link_pump(void)
         return;
     }
     if (!read_some()) {
-        fail(step == STEP_CONNECT ? "no dsterm server answered" : "connection closed");
+        fail(step == STEP_CONNECT ? "no vitaterm server answered" : "connection closed");
         return;
     }
     if (step == STEP_CONNECT && frame_count() - step_at > 60 * 6) {
-        fail("no dsterm server answered");
+        fail("no vitaterm server answered");
         return;
     }
     if (step == STEP_AUTH && frame_count() - step_at > 60 * 10) {

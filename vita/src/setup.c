@@ -239,7 +239,7 @@ static int pair_with(uint32_t addr, uint16_t port, const char *name,
     const int s = open_server(addr, port, 6 * 60, "Connecting...");
     if (s < 0) {
         memset(priv, 0, sizeof(priv));
-        snprintf(why, why_len, "No dsterm server answered at that address.");
+        snprintf(why, why_len, "No vitaterm server answered at that address.");
         return 0;
     }
 
@@ -257,12 +257,12 @@ static int pair_with(uint32_t addr, uint16_t port, const char *name,
     if (ok) ok = await_pair(s, &type, &payload, &len, 10 * 60, "Pairing", "Exchanging keys...");
     if (!ok) {
         snprintf(why, why_len, "The computer closed the connection. Is its pairing "
-                 "window open? Run  dsterm pair  there first.");
+                 "window open? Run  vitaterm pair  there first.");
     } else if (type != MSG_PAIR_REPLY) {
         fail_reason(payload, len, why, why_len);
         ok = 0;
     } else if (len != PAIR_REPLY_SIZE) {
-        snprintf(why, why_len, "That computer pairs the old way: update dsterm there.");
+        snprintf(why, why_len, "That computer pairs the old way: update vitaterm there.");
         ok = 0;
     } else {
         memcpy(server_pub, payload, X25519_SIZE);
@@ -374,7 +374,7 @@ static int add_server(const char *name, const char *host, uint16_t port, int pai
     char title[64];
     snprintf(title, sizeof(title), "New computer: %.20s", name);
     if (!pairing_open &&
-        !confirm(title, "On that computer, run:\n\n      dsterm pair\n\nthen press Cross "
+        !confirm(title, "On that computer, run:\n\n      vitaterm pair\n\nthen press Cross "
                         "here. Both screens will show a code to compare.\n\n"
                         "(To type its key instead, press Circle and choose "
                         "\"Type a key\" from the start screen.)")) {
@@ -500,9 +500,9 @@ static void draw_home(const row_t *rows, int n, int sel, const char *notice)
 {
     gfx_begin();
     gfx_rect(0, 0, SCREEN_W, SCREEN_H, 0xFF14100Cu);
-    gfx_text(40, 70, COL_ACCENT, 1.8f, "Claude Terminal");
+    gfx_text(40, 70, COL_ACCENT, 1.8f, "vitaterm");
     gfx_text(42, 102, COL_DIM, 1.0f,
-             "Claude Code on your computer, on this Vita. Run  dsterm serve  there.");
+             "Claude Code on your computer, on this Vita. Run  vitaterm setup  there once.");
     int y = 140;
     for (int i = 0; i < n; i++) {
         if (i > 0 && rows[i].kind != rows[i - 1].kind) y += 14;
@@ -650,7 +650,7 @@ int setup_run(char *name, size_t cap)
             find_by_broadcast(&found);
             found_valid = 1;
             if (!found.count) {
-                snprintf(notice, sizeof(notice), "No computer answered. Is  dsterm serve  "
+                snprintf(notice, sizeof(notice), "No computer answered. Is  vitaterm  "
                          "running, and on the same network as this Vita?");
             }
             continue;
