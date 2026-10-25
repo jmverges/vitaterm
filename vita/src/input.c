@@ -153,7 +153,9 @@ int input_text(const char *title, const char *initial, char *out, size_t cap,
     param.supportedLanguages = 0;
     param.languagesForced = SCE_FALSE;
     param.type = numeric ? SCE_IME_TYPE_NUMBER : SCE_IME_TYPE_DEFAULT;
-    param.option = numeric ? 0 : SCE_IME_OPTION_MULTILINE;
+    // One line: the keyboard's own Enter is what sends it.  (In multi-line mode
+    // its confirm key ends the dialog with CLOSE, which read as a cancel.)
+    param.option = 0;
     param.title = title16;
     param.maxTextLength = cap / 3 < SCE_IME_DIALOG_MAX_TEXT_LENGTH
                               ? (SceUInt32)(cap / 3) : SCE_IME_DIALOG_MAX_TEXT_LENGTH;
