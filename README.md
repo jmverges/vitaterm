@@ -97,11 +97,12 @@ From then on the Vita connects to it by itself when the app opens.
 | Square | The keyboard: what you type is sent, then Enter |
 | Triangle | The menu |
 | D-pad | Arrow keys |
-| L / R | Shift+Tab (Claude's mode) / Tab |
+| L | Shift+Tab (Claude's mode) |
+| R | Backspace (hold to repeat) |
 | Sticks, or a finger on the screen | Scroll back through the session |
 | Select | Back to now |
 | Start | Camera |
-| L+R held | Show the buttons |
+| Select held | Show the buttons |
 
 ## Commands on the computer
 

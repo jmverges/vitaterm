@@ -4,9 +4,9 @@
 //   Circle  Esc (stops Claude)
 //   Square  the keyboard: type, then Enter is sent with it
 //   Triangle the menu: sessions, slash commands, snippets, keys, camera
-//   D-pad   arrows          L / R  Shift+Tab / Tab
+//   D-pad   arrows          L  Shift+Tab (Claude's mode)   R  Backspace (repeats)
 //   Left stick, right stick or a finger: scroll back; Select: back to live
-//   Start   the camera;  L+R held: this list of buttons
+//   Start   the camera;  Select held: this list of buttons
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -149,9 +149,9 @@ static void draw_help(void)
 {
     static const char *const hints[] = {
         "cross", "Enter", "circle", "Esc", "square", "Type", "triangle", "Menu",
-        "L", "Mode", "START", "Camera", "SELECT", "Live",
+        "R", "Delete", "L", "Mode", "START", "Camera", "SELECT", "Live",
     };
-    gfx_hints(hints, 7);
+    gfx_hints(hints, 8);
 }
 
 static int terminal(void)
@@ -168,17 +168,8 @@ static int terminal(void)
         if (in.repeat & SCE_CTRL_LEFT) link_key("\x1b[D", 3);
         if (in.down & SCE_CTRL_CROSS) link_key("\r", 1);
         if (in.down & SCE_CTRL_CIRCLE) link_key("\x1b", 1);
-        // L and R act on release, so holding both (the help) types nothing.
-        static unsigned shoulders, chord;
-        const unsigned lr = in.held & (SCE_CTRL_LTRIGGER | SCE_CTRL_RTRIGGER);
-        if (lr == (SCE_CTRL_LTRIGGER | SCE_CTRL_RTRIGGER)) chord = 1;
-        const unsigned released = shoulders & ~lr;
-        if (released && !chord) {
-            if (released & SCE_CTRL_LTRIGGER) link_key("\x1b[Z", 3);
-            if (released & SCE_CTRL_RTRIGGER) link_key("\t", 1);
-        }
-        if (!lr) chord = 0;
-        shoulders = lr;
+        if (in.down & SCE_CTRL_LTRIGGER) link_key("\x1b[Z", 3);
+        if (in.repeat & SCE_CTRL_RTRIGGER) link_key("\x7f", 1);    // Backspace, held repeats
         if (in.down & SCE_CTRL_SELECT) link_live();
         if (in.down & SCE_CTRL_SQUARE) keyboard();
         if (in.down & SCE_CTRL_START) cam_run();
@@ -206,7 +197,7 @@ static int terminal(void)
 
         if (in.down && frames > 60) help_until = frames + 60 * 3 < help_until ? frames + 60 * 3
                                                                              : help_until;
-        if (in.held & SCE_CTRL_LTRIGGER && in.held & SCE_CTRL_RTRIGGER) help_until = frames + 2;
+        if (in.held & SCE_CTRL_SELECT) help_until = frames + 2;
         gfx_begin();
         app_draw_terminal();
         if (frames < help_until) draw_help();

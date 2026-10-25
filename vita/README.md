@@ -24,11 +24,12 @@ Vita's grid (96x28) as its default (`dsterm/vita.py`).
 | Square | The keyboard: what you type is sent, then Enter |
 | Triangle | Menu: Claude sessions, slash commands, snippets, keys, camera, sound, another computer |
 | D-pad | Arrow keys |
-| L / R | Shift+Tab (Claude's mode) / Tab |
+| L | Shift+Tab (Claude's mode) |
+| R | Backspace (hold to repeat) |
 | Left or right stick, or a finger | Scroll back through the session |
 | Select | Back to live |
 | Start | Camera |
-| L+R held | Show the buttons |
+| Select held | Show the buttons |
 
 Settings and paired computers live in `ux0:data/vitaterm`. Snippets can go in
 `ux0:data/vitaterm/snippets.txt` (the DS card's format), or the computer pushes
