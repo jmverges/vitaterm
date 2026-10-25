@@ -128,7 +128,7 @@ in `ux0:data/vitaterm/snippets.txt`, or the computer sends its own.
 
 ## Status
 
-Early, but in daily use on a PS Vita 1000: pairing by code, the encrypted
+Early. Running on a PS Vita 1000: pairing by code, the encrypted
 link, the terminal, typing and approvals work on real hardware. The camera
 has been tested end to end in the Vita3K emulator.
 
