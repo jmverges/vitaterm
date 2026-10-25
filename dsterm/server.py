@@ -53,6 +53,7 @@ from .protocol import (
     FEATURE_COMMANDS,
     FEATURE_MIRROR,
     FEATURE_ASK,
+    FEATURE_LATIN1,
     MAX_PAYLOAD,
     PRE_AUTH_ALLOWED,
     FrameReader,
@@ -1038,6 +1039,7 @@ class Server(CameraMixin, PairingMixin, ScrollbackMixin, MirrorMixin, SessionsMi
         c.caps.commands = FEATURE_COMMANDS in features
         c.caps.mirror = FEATURE_MIRROR in features
         c.caps.ask = FEATURE_ASK in features
+        c.caps.latin1 = FEATURE_LATIN1 in features
         # Asked for AND offered: under --no-camera this stays False, so
         # no READY is sent and any camera frame is a protocol error.
         c.caps.camera = FEATURE_CAMERA in features and self._camera_offered()
@@ -1231,7 +1233,8 @@ class Server(CameraMixin, PairingMixin, ScrollbackMixin, MirrorMixin, SessionsMi
         ]
         messages = []
         for start in range(0, len(every_cell), CELLS_PER_MESSAGE):
-            messages.append(encode_diff(every_cell[start : start + CELLS_PER_MESSAGE]))
+            messages.append(encode_diff(every_cell[start : start + CELLS_PER_MESSAGE],
+                                        c.caps.latin1))
         c.mirror = grid
         # The client's caret starts wherever the current one is; a resync leaves
         # nothing to diff against, so the cursor is stated rather than inferred.
@@ -1369,5 +1372,7 @@ class Server(CameraMixin, PairingMixin, ScrollbackMixin, MirrorMixin, SessionsMi
         """
         if not changes:
             return
+        c = self._authed()
+        latin1 = c is not None and c.caps.latin1
         for start in range(0, len(changes), CELLS_PER_MESSAGE):
-            self._queue(encode_diff(changes[start : start + CELLS_PER_MESSAGE]))
+            self._queue(encode_diff(changes[start : start + CELLS_PER_MESSAGE], latin1))

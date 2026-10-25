@@ -22,10 +22,10 @@
 #define SCREEN_W 960
 #define SCREEN_H 544
 
-// The terminal: 8x16 cells under a 32 px status bar.
-#define CELL_W 8
-#define CELL_H 16
-#define BAR_H 32
+// The terminal: 10x18 cells under a 40 px status bar.
+#define CELL_W 10
+#define CELL_H 18
+#define BAR_H 40
 #define TERM_W (PROTO_COLS * CELL_W)
 #define TERM_H (PROTO_ROWS * CELL_H)
 

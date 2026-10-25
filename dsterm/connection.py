@@ -134,6 +134,9 @@ class Caps:
     # STATE carries the open question's id, and this card ties its Enter to
     # it with ANSWER (server_agents.py, "questions").
     ask: bool = False
+    # Draws Latin-1's letters (protocol.LATIN1_TO_WIRE): accents arrive as
+    # themselves instead of '?'.
+    latin1: bool = False
     # The camera: HELLO-announced AND offered by this server. Without it no
     # camera message from this connection is legitimate.
     camera: bool = False

@@ -9,7 +9,7 @@ Your code and Claude Code stay on your computer. The Vita only shows the
 screen and sends keys, and everything between the two is encrypted.
 
 <p>
-<img src="docs/assets/vita/terminal.png" width="49%" alt="The terminal: a Claude Code session, 120 columns by 32 rows, with the button help along the bottom">
+<img src="docs/assets/vita/terminal.png" width="49%" alt="The terminal: a Claude Code session, 96 columns by 28 rows, with the button help along the bottom">
 <img src="docs/assets/vita/menu.png" width="49%" alt="The Triangle menu over the terminal: Claude sessions, slash commands, snippets, keys, camera, sound, another computer">
 </p>
 <p>
@@ -27,7 +27,7 @@ screen and sends keys, and everything between the two is encrypted.
 
 ## Features
 
-- **Your live session**, 120×32, the whole Vita screen. A bar on top says what
+- **Your live session**, 96×28 in a font made for the Vita's screen, accents included. A bar on top says what
   Claude is doing (working, needs your OK, asking you), plus the round trip,
   the battery and the time.
 - **Approvals on a button.** Cross answers Claude's question, Circle stops it,

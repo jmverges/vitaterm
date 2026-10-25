@@ -434,7 +434,7 @@ static int hello_payload(char *out, size_t cap, const uint8_t *card_nonce)
     }
     int n = snprintf(out, cap,
                      "ds-term/1 mode snippets remote state seal seal3 commands ask "
-                     "grid=%dx%d camera", PROTO_COLS, PROTO_ROWS);
+                     "grid=%dx%d camera latin1", PROTO_COLS, PROTO_ROWS);
     if (cfg.device_id[0]) n += snprintf(out + n, cap - (size_t)n, " id=%s", cfg.device_id);
     n += snprintf(out + n, cap - (size_t)n, " cn=%s", cn);
     return n < (int)cap ? n : -1;

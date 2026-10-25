@@ -1,6 +1,6 @@
 """`vitaterm`: the server for the PS Vita client (vita/ in this repository).
 
-The same server as `dsterm`, sized for the Vita: its terminal is 120x32, so
+The same server as `dsterm`, sized for the Vita: its terminal is 96x28, so
 `vitaterm serve` and the service `vitaterm setup` installs run at that grid
 unless told otherwise.  Only the commands that make sense without a DS are
 offered; the DS-only ones (card, build, view...) stay under `dsterm`.
@@ -13,7 +13,7 @@ import sys
 
 from . import cli
 
-VITA_GRID = "120x32"
+VITA_GRID = "96x28"
 
 USAGE = f"""usage: vitaterm COMMAND [options]
 

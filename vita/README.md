@@ -6,14 +6,14 @@ it.
 The app talks to the same server the DS card does: Claude Code runs on your
 computer, the Vita is its screen and controller.
 
-It is not the DS interface on a Vita. There is one 960x544 screen, a 120x32
-terminal in an 8x16 font, the system keyboard for typing, and the camera for
+It is not the DS interface on a Vita. There is one 960x544 screen, a 96x28
+terminal in a 10x18 font, the system keyboard for typing, and the camera for
 sending Claude a picture. The protocol half (framing, the encrypted link,
 pairing, discovery, profiles, sessions, the sounds) is the DS client's own
 code in `dsclient/source`, compiled unchanged.
 
 The computer runs `vitaterm`, which is the DS project's `dsterm` with the
-Vita's grid (120x32) as its default (`dsterm/vita.py`).
+Vita's grid (96x28) as its default (`dsterm/vita.py`).
 
 ## Buttons
 

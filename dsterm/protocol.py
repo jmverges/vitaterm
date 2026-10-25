@@ -616,11 +616,19 @@ from .extmap import FROM_WIRE, TO_WIRE
 
 _FALLBACK_BYTE = ord("?")
 
+# A client that announces "latin1" (the Vita's) also draws Latin-1's letters
+# and Spanish punctuation, on the bytes the DS table leaves free: U+00C0..U+00FF
+# on themselves (á é í ó ú ñ ü ç ...), and six marks on 0xBA..0xBF.  A DS never
+# announces it, so it is never sent a byte its font does not have.
+_LATIN1_MARKS = {0xA1: 0xBA, 0xAB: 0xBB, 0xBB: 0xBC, 0xBA: 0xBD, 0xAA: 0xBE, 0xBF: 0xBF}
+LATIN1_TO_WIRE = {**_LATIN1_MARKS, **{c: c for c in range(0xC0, 0x100)}}
+LATIN1_FROM_WIRE = {v: k for k, v in LATIN1_TO_WIRE.items()}
+
 _FLAG_BOLD = 0x01
 _FLAG_REVERSE = 0x02
 
 
-def _glyph_byte(char: str) -> int:
+def _glyph_byte(char: str, latin1: bool = False) -> int:
     """ASCII passes through; known extended glyphs get their wire byte.
 
     Claude Code frames its entire UI in box drawing. An earlier version mapped
@@ -635,13 +643,17 @@ def _glyph_byte(char: str) -> int:
     wire = TO_WIRE.get(code)
     if wire is not None:
         return wire
+    if latin1:
+        wire = LATIN1_TO_WIRE.get(code)
+        if wire is not None:
+            return wire
     return _FALLBACK_BYTE
 
 
-def pack_cell(cell: Cell) -> bytes:
+def pack_cell(cell: Cell, latin1: bool = False) -> bytes:
     attr = (_PALETTE_INDEX.get(cell.fg, 0) << 4) | _PALETTE_INDEX.get(cell.bg, 0)
     flags = (_FLAG_BOLD if cell.bold else 0) | (_FLAG_REVERSE if cell.reverse else 0)
-    return bytes((_glyph_byte(cell.char), attr, flags))
+    return bytes((_glyph_byte(cell.char, latin1), attr, flags))
 
 
 def _glyph_char(glyph: int) -> str:
@@ -676,14 +688,14 @@ def decode_full_frame(payload: bytes) -> Grid:
     return Grid(cells)
 
 
-def encode_diff(changes: list[CellChange]) -> bytes:
+def encode_diff(changes: list[CellChange], latin1: bool = False) -> bytes:
     if len(changes) * DIFF_ENTRY_SIZE > MAX_PAYLOAD:
         raise ProtocolError("diff too large; send a full frame instead")
     parts = bytearray()
     for ch in changes:
         parts.append(ch.row)
         parts.append(ch.col)
-        parts.extend(pack_cell(ch.cell))
+        parts.extend(pack_cell(ch.cell, latin1))
     return encode(MsgType.FRAME_DIFF, bytes(parts))
 
 
@@ -810,6 +822,8 @@ FEATURE_MIRROR = "mirror"
 # STATE carries the open question's id and the card ties its Enter to it
 # (ANSWER). See docs/PROTOCOL.md, "Answers".
 FEATURE_ASK = "ask"
+# The client draws Latin-1 letters too (LATIN1_TO_WIRE): the Vita.
+FEATURE_LATIN1 = "latin1"
 
 
 def encode_hello(features: tuple[str, ...] = ()) -> bytes:

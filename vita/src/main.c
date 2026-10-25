@@ -86,15 +86,15 @@ static void draw_bar(void)
     unsigned dot = COL_BAD;
     if (conn.state == LINK_UP) dot = COL_GOOD;
     else if (conn.state == LINK_CONNECTING) dot = COL_WARN;
-    gfx_rect(12, 11, 10, 10, dot);
-    gfx_text(30, 23, COL_TEXT, 0.95f, conn.server_name[0] ? conn.server_name : "not connected");
+    gfx_rect(12, 15, 10, 10, dot);
+    gfx_text(30, 27, COL_TEXT, 0.95f, conn.server_name[0] ? conn.server_name : "not connected");
     int x = 40 + gfx_text_width(0.95f, conn.server_name[0] ? conn.server_name : "not connected");
 
     // Middle: what Claude is doing, or the latest news.
     if (conn.status[0] && frames - conn.status_at < 60 * 4) {
-        gfx_text(x + 20, 23, COL_DIM, 0.9f, conn.status);
+        gfx_text(x + 20, 27, COL_DIM, 0.9f, conn.status);
     } else if (conn.state != LINK_UP) {
-        gfx_text(x + 20, 23, COL_WARN, 0.9f, conn.status[0] ? conn.status : "connecting...");
+        gfx_text(x + 20, 27, COL_WARN, 0.9f, conn.status[0] ? conn.status : "connecting...");
     } else {
         unsigned colour;
         const char *word = claude_word(conn.claude_state, &colour);
@@ -102,7 +102,7 @@ static void draw_bar(void)
             char buf[80];
             if (conn.claude_detail[0]) snprintf(buf, sizeof(buf), "%s: %s", word, conn.claude_detail);
             else snprintf(buf, sizeof(buf), "%s", word);
-            gfx_text(x + 20, 23, colour, 0.95f, buf);
+            gfx_text(x + 20, 27, colour, 0.95f, buf);
         }
     }
 
@@ -123,7 +123,7 @@ static void draw_bar(void)
         n += snprintf(right + n, sizeof(right) - n, "%02d:%02d", t.hour, t.minute);
     }
     const int w = gfx_text_width(0.9f, right);
-    gfx_text(SCREEN_W - 14 - w, 23, conn.lines_back ? COL_WARN : COL_DIM, 0.9f, right);
+    gfx_text(SCREEN_W - 14 - w, 27, conn.lines_back ? COL_WARN : COL_DIM, 0.9f, right);
 }
 
 void app_draw_terminal(void)

@@ -143,7 +143,7 @@ void gfx_hints(const char *const *pairs, int n)
 {
     int x = 20;
     const int y = SCREEN_H - 20;
-    gfx_rect(0, SCREEN_H - 40, SCREEN_W, 40, 0xE0100C0Au);
+    gfx_rect(0, SCREEN_H - 40, SCREEN_W, 40, 0xFF100C0Au);
     for (int i = 0; i < n; i++) {
         const char *g = pairs[2 * i], *label = pairs[2 * i + 1];
         glyph(x + 7, y - 1, g);

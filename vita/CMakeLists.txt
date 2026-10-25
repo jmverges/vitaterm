@@ -15,9 +15,9 @@ set(VITA_APP_NAME "vitaterm")
 set(VITA_TITLEID  "VTRM00001")
 set(VITA_VERSION  "01.00")
 
-# The grid this client draws; the computer runs  dsterm serve --grid 120x32.
-set(GRID_COLS 120)
-set(GRID_ROWS 32)
+# The grid this client draws; vitaterm serve uses the same by default.
+set(GRID_COLS 96)
+set(GRID_ROWS 28)
 
 # The DS card's protocol half, compiled unchanged.
 set(DS ${CMAKE_SOURCE_DIR}/../dsclient/source)
