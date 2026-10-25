@@ -17,7 +17,7 @@ screen and sends keys, and everything between the two is encrypted.
 <img src="docs/assets/vita/camera.png" width="49%" alt="The camera: viewfinder, take, flip, close">
 </p>
 
-<sub>Screenshots from the Vita3K emulator, with a scripted demo screen in place of a live Claude session.</sub>
+<sub>Screenshots from the Vita3K emulator, connected to a real `vitaterm serve` running Claude Code.</sub>
 
 > [!NOTE]
 > This is a fork of [logancarrillo/ds-claude-terminal](https://github.com/logancarrillo/ds-claude-terminal),
@@ -128,10 +128,9 @@ in `ux0:data/vitaterm/snippets.txt`, or the computer sends its own.
 
 ## Status
 
-Early. Tested in the Vita3K emulator against a real server: connecting with a
-saved key, the encrypted link, the terminal, the menu, the keyboard, the
-camera and a picture saved on the computer. Pairing by code, sound and the
-real hardware are being tested now.
+Early, but in daily use on a PS Vita 1000: pairing by code, the encrypted
+link, the terminal, typing and approvals work on real hardware. The camera
+has been tested end to end in the Vita3K emulator.
 
 ## Building
 
